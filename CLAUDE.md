@@ -1,0 +1,77 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Gen-Jigsaw is a collaborative AI-powered outpainting puzzle app. Users expand a world grid by generating new tiles in adjacent cells. The room owner reviews and adopts/rejects generated tiles.
+
+**Stack:** Next.js 15 (App Router) / React 19 / TypeScript / Prisma / SQLite / TailwindCSS v4 / Zod
+
+## Commands
+
+```bash
+npm run dev          # Start dev server (localhost:3000)
+npm run build        # Production build
+npm run db:push      # Apply Prisma schema to SQLite
+npm run db:studio    # Open Prisma Studio GUI
+npx tsc --noEmit     # Type check (no linter/test framework configured)
+```
+
+Node.js 24 is managed via mise (`mise.toml`).
+
+## Architecture
+
+### Data Flow
+
+Client (React + hooks) → Next.js API Routes → Prisma → SQLite (`prisma/dev.db`)
+
+### Key Directories
+
+- `src/app/api/` — API routes (REST endpoints)
+- `src/app/room/[id]/` — Room detail page
+- `src/components/canvas/` — Interactive grid with pan/zoom (`tile-grid.tsx`, `tile-cell.tsx`)
+- `src/components/expansion/` — Prompt input & candidate list UI
+- `src/hooks/` — `useUser` (localStorage), `useRoom` (3s polling), `useToast`
+- `src/lib/` — Prisma singleton, Zod validation schemas, error helpers, lock service
+- `src/lib/image-gen/` — Provider pattern for image generation (currently mock)
+- `src/types/` — Shared TypeScript types
+- `prisma/schema.prisma` — Database schema (User, Room, Tile, Expansion, Lock)
+
+### Core Workflow: Expansion Lifecycle
+
+1. User clicks "+" on adjacent cell → **acquires lock** (90s TTL)
+2. Enters prompt → creates **Expansion** (status: QUEUED)
+3. Client calls `/api/expansions/[id]/run` → image generation → status: DONE
+4. Room owner adopts (creates Tile + releases lock) or rejects (releases lock)
+
+Status transitions: `QUEUED → RUNNING → DONE → ADOPTED/REJECTED` (or `FAILED`)
+
+### Lock System (`src/lib/lock-service.ts`)
+
+Optimistic locking per grid cell `(roomId, x, y)` with 90-second TTL. SQLite serialized writes ensure safety. Expired locks are cleaned up on acquisition attempts.
+
+### Image Generation (`src/lib/image-gen/`)
+
+Provider interface pattern. `MockImageGenProvider` copies `public/placeholder.png` to `public/generated/{cuid}.png`. Swap via `IMAGE_GEN_PROVIDER` env var.
+
+### State Management
+
+- **User identity:** localStorage (`gen-jigsaw:user`) — no auth
+- **Room state:** Client-side polling every 3 seconds via `useRoom` hook — no WebSocket/SSE
+- **Path alias:** `@/*` → `./src/*`
+
+### API Endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/users` | Create user |
+| GET/POST | `/api/rooms` | List / create room (auto-generates tile at 0,0) |
+| GET | `/api/rooms/:id` | Room detail (tiles, expansions, locks) |
+| POST/DELETE | `/api/rooms/:id/locks` | Acquire / release lock |
+| POST | `/api/rooms/:id/expansions` | Create expansion |
+| POST | `/api/expansions/:id/run` | Execute image generation |
+| POST | `/api/expansions/:id/adopt` | Owner adopts → creates Tile |
+| POST | `/api/expansions/:id/reject` | Owner rejects |
+
+All endpoints validate input with Zod schemas from `src/lib/validation.ts`.
