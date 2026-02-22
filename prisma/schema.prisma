@@ -1,0 +1,79 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          String   @id
+  displayName String
+  createdAt   DateTime @default(now())
+
+  rooms      Room[]      @relation("RoomOwner")
+  tiles      Tile[]
+  expansions Expansion[]
+  locks      Lock[]
+}
+
+model Room {
+  id          String   @id
+  name        String
+  ownerUserId String
+  stylePreset String?
+  createdAt   DateTime @default(now())
+
+  owner      User        @relation("RoomOwner", fields: [ownerUserId], references: [id])
+  tiles      Tile[]
+  expansions Expansion[]
+  locks      Lock[]
+}
+
+model Tile {
+  id              String   @id
+  roomId          String
+  x               Int
+  y               Int
+  imageUrl        String
+  createdByUserId String
+  createdAt       DateTime @default(now())
+
+  room      Room @relation(fields: [roomId], references: [id])
+  createdBy User @relation(fields: [createdByUserId], references: [id])
+
+  @@unique([roomId, x, y])
+}
+
+model Expansion {
+  id              String   @id
+  roomId          String
+  fromTileId      String
+  targetX         Int
+  targetY         Int
+  direction       String
+  promptJson      String
+  status          String   @default("QUEUED")
+  resultImageUrl  String?
+  createdByUserId String
+  createdAt       DateTime @default(now())
+
+  room      Room @relation(fields: [roomId], references: [id])
+  createdBy User @relation(fields: [createdByUserId], references: [id])
+}
+
+model Lock {
+  id            String   @id
+  roomId        String
+  x             Int
+  y             Int
+  lockedByUserId String
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+
+  room     Room @relation(fields: [roomId], references: [id])
+  lockedBy User @relation(fields: [lockedByUserId], references: [id])
+
+  @@unique([roomId, x, y])
+}
