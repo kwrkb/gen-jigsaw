@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import type { RoomDetail, Tile, Expansion, Lock } from "@/types";
 import { TileCell } from "./tile-cell";
 
@@ -27,11 +27,22 @@ function getGridBounds(tiles: Tile[]): GridBounds {
   if (tiles.length === 0) {
     return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
   }
+  let minX = tiles[0].x;
+  let maxX = tiles[0].x;
+  let minY = tiles[0].y;
+  let maxY = tiles[0].y;
+  for (let i = 1; i < tiles.length; i++) {
+    const { x, y } = tiles[i];
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
   return {
-    minX: Math.min(...tiles.map((t) => t.x)) - PADDING,
-    maxX: Math.max(...tiles.map((t) => t.x)) + PADDING,
-    minY: Math.min(...tiles.map((t) => t.y)) - PADDING,
-    maxY: Math.max(...tiles.map((t) => t.y)) + PADDING,
+    minX: minX - PADDING,
+    maxX: maxX + PADDING,
+    minY: minY - PADDING,
+    maxY: maxY + PADDING,
   };
 }
 
@@ -68,35 +79,37 @@ export function TileGrid({
   const isDragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
 
-  const bounds = getGridBounds(room.tiles);
+  const bounds = useMemo(() => getGridBounds(room.tiles), [room.tiles]);
   const cols = bounds.maxX - bounds.minX + 1;
   const rows = bounds.maxY - bounds.minY + 1;
 
-  // タイルマップ
-  const tileMap = new Map<string, Tile>(
-    room.tiles.map((t) => [`${t.x},${t.y}`, t])
+  const tileMap = useMemo(
+    () => new Map<string, Tile>(room.tiles.map((t) => [`${t.x},${t.y}`, t])),
+    [room.tiles]
   );
 
-  // ロックマップ
-  const now = new Date();
-  const lockMap = new Map<string, Lock>(
-    room.locks
-      .filter((l) => new Date(l.expiresAt) > now)
-      .map((l) => [`${l.x},${l.y}`, l])
-  );
+  const lockMap = useMemo(() => {
+    const now = new Date();
+    return new Map<string, Lock>(
+      room.locks
+        .filter((l) => new Date(l.expiresAt) > now)
+        .map((l) => [`${l.x},${l.y}`, l])
+    );
+  }, [room.locks]);
 
-  // 進行中のExpansionマップ（QUEUED/RUNNING/DONE）
-  const expansionMap = new Map<string, Expansion>();
-  for (const exp of room.expansions) {
-    if (["QUEUED", "RUNNING", "DONE"].includes(exp.status)) {
-      const key = `${exp.targetX},${exp.targetY}`;
-      // 最新のexpansionを優先
-      const existing = expansionMap.get(key);
-      if (!existing || exp.createdAt > existing.createdAt) {
-        expansionMap.set(key, exp);
+  const expansionMap = useMemo(() => {
+    const map = new Map<string, Expansion>();
+    for (const exp of room.expansions) {
+      if (["QUEUED", "RUNNING", "DONE"].includes(exp.status)) {
+        const key = `${exp.targetX},${exp.targetY}`;
+        const existing = map.get(key);
+        if (!existing || exp.createdAt > existing.createdAt) {
+          map.set(key, exp);
+        }
       }
     }
-  }
+    return map;
+  }, [room.expansions]);
 
   // 初期オフセット（グリッドを中央に）
   useEffect(() => {

@@ -23,26 +23,28 @@ export async function POST(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return notFound("User not found");
 
-  // ルーム作成 + 初期タイル(0,0)作成
-  const room = await prisma.room.create({
-    data: {
-      id: createId(),
-      name,
-      ownerUserId: userId,
-      stylePreset: stylePreset ?? null,
-    },
-  });
-
-  await prisma.tile.create({
-    data: {
-      id: createId(),
-      roomId: room.id,
-      x: 0,
-      y: 0,
-      imageUrl: "/placeholder.png",
-      createdByUserId: userId,
-    },
-  });
+  // ルーム作成 + 初期タイル(0,0)作成（アトミック）
+  const roomId = createId();
+  const [room] = await prisma.$transaction([
+    prisma.room.create({
+      data: {
+        id: roomId,
+        name,
+        ownerUserId: userId,
+        stylePreset: stylePreset ?? null,
+      },
+    }),
+    prisma.tile.create({
+      data: {
+        id: createId(),
+        roomId,
+        x: 0,
+        y: 0,
+        imageUrl: "/placeholder.png",
+        createdByUserId: userId,
+      },
+    }),
+  ]);
 
   return NextResponse.json(room, { status: 201 });
 }

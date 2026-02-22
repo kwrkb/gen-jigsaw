@@ -104,6 +104,12 @@ export function ExpansionPanel({
 
       if (!runRes.ok) {
         const data = await runRes.json().catch(() => ({}));
+        // サーバー側でロック解放済みだが、念のためクライアントからも解放
+        await fetch(`/api/rooms/${roomId}/locks`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ x: targetX, y: targetY, userId }),
+        }).catch(() => {});
         onError(data.error ?? "画像生成に失敗しました");
         setStep("input");
         return;

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { badRequest, conflict, forbidden, notFound } from "@/lib/errors";
-import { z } from "zod";
-
-const RejectSchema = z.object({ userId: z.string().min(1) });
+import { RejectExpansionSchema } from "@/lib/validation";
 
 export async function POST(
   req: NextRequest,
@@ -11,7 +9,7 @@ export async function POST(
 ) {
   const { id } = await params;
   const body = await req.json().catch(() => null);
-  const parsed = RejectSchema.safeParse(body);
+  const parsed = RejectExpansionSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.message);
 
   const { userId } = parsed.data;

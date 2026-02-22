@@ -1,5 +1,5 @@
 export type Direction = "N" | "E" | "S" | "W";
-export type ExpansionStatus = "QUEUED" | "RUNNING" | "DONE" | "REJECTED" | "ADOPTED";
+export type ExpansionStatus = "QUEUED" | "RUNNING" | "DONE" | "FAILED" | "REJECTED" | "ADOPTED";
 
 export interface User {
   id: string;

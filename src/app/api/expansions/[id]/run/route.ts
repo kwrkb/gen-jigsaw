@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { badRequest, conflict, notFound, serverError } from "@/lib/errors";
-import { RunExpansionSchema } from "@/lib/validation";
+import { RunExpansionSchema, DirectionSchema } from "@/lib/validation";
 import { getImageGenProvider } from "@/lib/image-gen";
 
 export async function POST(
@@ -36,9 +36,11 @@ export async function POST(
     const provider = getImageGenProvider();
     const promptJson = JSON.parse(expansion.promptJson);
 
+    const direction = DirectionSchema.parse(expansion.direction);
+
     const result = await provider.generate({
       referenceImageUrl: fromTile.imageUrl,
-      direction: expansion.direction as "N" | "E" | "S" | "W",
+      direction,
       prompt: promptJson,
       size: 256,
     });
@@ -53,10 +55,20 @@ export async function POST(
 
     return NextResponse.json(updated);
   } catch (err) {
-    await prisma.expansion.update({
-      where: { id },
-      data: { status: "QUEUED" },
-    });
+    // FAILEDに変更 + ロック解放
+    await prisma.$transaction([
+      prisma.expansion.update({
+        where: { id },
+        data: { status: "FAILED" },
+      }),
+      prisma.lock.deleteMany({
+        where: {
+          roomId: expansion.roomId,
+          x: expansion.targetX,
+          y: expansion.targetY,
+        },
+      }),
+    ]);
     console.error("Image generation failed:", err);
     return serverError("Image generation failed");
   }

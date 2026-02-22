@@ -8,20 +8,26 @@ export async function GET(
 ) {
   const { id } = await params;
 
+  const now = new Date();
+
   const room = await prisma.room.findUnique({
     where: { id },
     include: {
       tiles: true,
-      expansions: true,
-      locks: true,
+      expansions: {
+        where: {
+          status: { notIn: ["ADOPTED", "REJECTED"] },
+        },
+      },
+      locks: {
+        where: {
+          expiresAt: { gt: now },
+        },
+      },
     },
   });
 
   if (!room) return notFound("Room not found");
 
-  // 期限切れロックを除外
-  const now = new Date();
-  const activeLocks = room.locks.filter((l) => l.expiresAt > now);
-
-  return NextResponse.json({ ...room, locks: activeLocks });
+  return NextResponse.json(room);
 }

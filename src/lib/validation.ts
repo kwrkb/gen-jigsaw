@@ -5,6 +5,7 @@ export const ExpansionStatusSchema = z.enum([
   "QUEUED",
   "RUNNING",
   "DONE",
+  "FAILED",
   "REJECTED",
   "ADOPTED",
 ]);
@@ -48,5 +49,9 @@ export const AdoptExpansionSchema = z.object({
 });
 
 export const RunExpansionSchema = z.object({
+  userId: z.string().min(1),
+});
+
+export const RejectExpansionSchema = z.object({
   userId: z.string().min(1),
 });

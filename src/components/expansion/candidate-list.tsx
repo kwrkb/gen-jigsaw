@@ -14,6 +14,7 @@ const STATUS_LABELS: Record<string, string> = {
   QUEUED: "待機中",
   RUNNING: "生成中",
   DONE: "完了",
+  FAILED: "失敗",
   REJECTED: "却下",
   ADOPTED: "採用済",
 };

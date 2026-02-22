@@ -98,15 +98,14 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   async function handleReject(expansion: Expansion) {
     try {
-      // statusをREJECTEDに更新（直接DBを叩く代わりにAPIエンドポイントを通す）
       const res = await fetch(`/api/expansions/${expansion.id}/reject`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user!.id }),
       });
       if (!res.ok) {
-        // rejectエンドポイントは未実装なので、フォールバック
-        addToast("却下機能は開発中です", "info");
+        const data = await res.json().catch(() => ({}));
+        addToast(data.error ?? "却下に失敗しました", "error");
         return;
       }
       addToast("候補を却下しました", "info");
