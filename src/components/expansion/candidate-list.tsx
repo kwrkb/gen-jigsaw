@@ -32,15 +32,19 @@ export function CandidateList({
   if (active.length === 0) return null;
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+    <div className="p-4" style={{ borderTop: "1px solid var(--color-border)" }}>
+      <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--color-text-secondary)" }}>
         候補一覧 ({active.length}件)
       </h3>
       <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
         {active.map((exp) => (
           <div
             key={exp.id}
-            className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-lg p-2"
+            className="flex items-center gap-3 p-2"
+            style={{
+              background: "var(--color-surface-2)",
+              borderRadius: "var(--radius-md)",
+            }}
           >
             {exp.resultImageUrl ? (
               <Image
@@ -52,26 +56,33 @@ export function CandidateList({
                 unoptimized
               />
             ) : (
-              <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center flex-shrink-0">
+              <div
+                className="w-12 h-12 rounded flex items-center justify-center flex-shrink-0"
+                style={{ background: "var(--color-surface-3)" }}
+              >
                 {exp.status === "RUNNING" ? (
-                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <div
+                    className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"
+                    style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
+                  />
                 ) : (
-                  <span className="text-xs text-gray-400">—</span>
+                  <span style={{ color: "var(--color-text-muted)" }} className="text-xs">—</span>
                 )}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+              <p className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>
                 ({exp.targetX}, {exp.targetY}) — {exp.direction}方向
               </p>
               <span
-                className={`text-xs font-medium ${
-                  exp.status === "DONE"
-                    ? "text-green-600 dark:text-green-400"
+                className="text-xs font-medium"
+                style={{
+                  color: exp.status === "DONE"
+                    ? "var(--color-success)"
                     : exp.status === "RUNNING"
-                    ? "text-blue-600 dark:text-blue-400"
-                    : "text-gray-500"
-                }`}
+                    ? "var(--color-accent)"
+                    : "var(--color-text-muted)",
+                }}
               >
                 {STATUS_LABELS[exp.status] ?? exp.status}
               </span>
@@ -80,13 +91,15 @@ export function CandidateList({
               <div className="flex gap-1 flex-shrink-0">
                 <button
                   onClick={() => onAdopt(exp)}
-                  className="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                  className="px-2 py-1 text-white text-xs transition-opacity hover:opacity-90"
+                  style={{ background: "var(--color-success)", borderRadius: "var(--radius-sm)" }}
                 >
                   採用
                 </button>
                 <button
                   onClick={() => onReject(exp)}
-                  className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
+                  className="px-2 py-1 text-white text-xs transition-opacity hover:opacity-90"
+                  style={{ background: "var(--color-error)", borderRadius: "var(--radius-sm)" }}
                 >
                   却下
                 </button>

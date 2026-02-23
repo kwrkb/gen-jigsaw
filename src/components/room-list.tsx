@@ -33,12 +33,12 @@ export function RoomList({ refreshTrigger }: RoomListProps) {
   }, [fetchRooms, refreshTrigger]);
 
   if (loading) {
-    return <p className="text-gray-500 dark:text-gray-400">読み込み中...</p>;
+    return <p style={{ color: "var(--color-text-muted)" }}>読み込み中...</p>;
   }
 
   if (rooms.length === 0) {
     return (
-      <p className="text-gray-500 dark:text-gray-400 text-center py-12">
+      <p className="text-center py-12" style={{ color: "var(--color-text-muted)" }}>
         まだルームがありません。最初のルームを作成しましょう！
       </p>
     );
@@ -50,18 +50,33 @@ export function RoomList({ refreshTrigger }: RoomListProps) {
         <Link
           key={room.id}
           href={`/room/${room.id}`}
-          className="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+          className="block p-4 transition-all"
+          style={{
+            background: "var(--color-surface-1)",
+            borderRadius: "var(--radius-lg)",
+            boxShadow: "var(--shadow-sm)",
+            border: "1px solid var(--color-border)",
+            borderLeft: "4px solid transparent",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = "var(--shadow-md)";
+            e.currentTarget.style.borderLeftColor = "var(--color-accent)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = "var(--shadow-sm)";
+            e.currentTarget.style.borderLeftColor = "transparent";
+          }}
         >
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">
+              <h3 className="font-semibold" style={{ color: "var(--color-text-primary)" }}>
                 {room.name}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-sm mt-1" style={{ color: "var(--color-text-muted)" }}>
                 by {room.owner.displayName}
               </p>
             </div>
-            <span className="text-xs text-gray-400 dark:text-gray-500">
+            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
               {new Date(room.createdAt).toLocaleDateString("ja-JP")}
             </span>
           </div>

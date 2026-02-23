@@ -22,6 +22,24 @@
 - [completed] Issue #8: referenceImageUrl 外部 URL 対応（loadReferenceImage() に置換）
 - [completed] Issue #3 + #4: ストレージ抽象化 + SSE アーキテクチャ文書化（PR #10）
 
+### Steps（UI/UX デザインリニューアル）
+- [completed] Phase 1: デザイン基盤構築（依存追加なし）
+  - [x] globals.css: フルデザイントークンシステム（カラー/シャドウ/角丸/ダークモード/スクロールバー）
+  - [x] layout.tsx: Space Grotesk + Noto Sans JP フォント導入（next/font/google）
+  - [x] page.tsx: ホームページのカラー統一（アクセントカラー、シャドウ、ディスプレイフォント）
+  - [x] user-setup.tsx: オンボーディング改善（タグライン追加、カードデザイン刷新）
+  - [x] create-room-form.tsx: アクセントカラー適用
+  - [x] room-list.tsx: ルームカード（ホバーエフェクト、左アクセントバー）
+  - [x] toast.tsx: ステータスカラートークン化
+  - [x] canvas/tile-grid.tsx: キャンバス背景トークン化
+  - [x] canvas/tile-cell.tsx: 全状態のカラートークン化
+  - [x] expansion/expansion-panel.tsx: モーダルカラートークン化
+  - [x] expansion/candidate-list.tsx: バッジ・ボタンカラートークン化
+  - [x] room/[id]/page.tsx: ルームページ全体のトークン化
+- [ ] Phase 2: コンポーネントポリッシュ（lucide-react / framer-motion 導入）
+- [ ] Phase 3: キャンバス体験の深化
+- [ ] Phase 4: レスポンシブ＆最終ポリッシュ
+
 ### Notes
 - 依存追加（`npm install`）は `getaddrinfo EAI_AGAIN registry.npmjs.org` により開発環境でのローカル実行は未完了。
 - コードと `package.json` は PR にコミット済み。CI 環境（GitHub Actions）で `npm install` が実行される。
@@ -183,3 +201,41 @@
 - ユーザーが「+」を押してから、隣接タイルに整合した画像がアウトペインティングで生成・表示される。
 - 他のユーザーが拡張している場所がリアルタイムで分かるようになる。
 - セキュアな環境でルーム運営ができるようになる。
+
+---
+
+## 今後の UI/UX 改善計画
+
+### Phase 2: コンポーネントポリッシュ
+
+**依存追加:** `npm install lucide-react framer-motion`
+
+- アイコン置換: emoji (🧩, 🔒, ✅ 等) → lucide-react アイコンコンポーネント
+- アニメーション導入: framer-motion による状態遷移アニメーション
+  - tile-cell: タイル出現時の fade-in / scale-in
+  - tile-grid: グリッド全体のレイアウトアニメーション
+  - expansion-panel: モーダルの open/close アニメーション
+  - candidate-list: リストアイテムの stagger アニメーション
+  - toast: スライドイン / スライドアウト
+
+### Phase 3: キャンバス体験の深化
+
+- タイル画像フレーム効果（subtle shadow / border treatment）
+- 拡張セル再デザイン（パルスアニメーション、アイコン改善）
+- ズームコントロール改善（スライダー、フィットビュー）
+- キーボードナビゲーション（矢印キーでセル移動）
+- ヘッダー改善（ルーム情報表示の充実）
+- サイドバー改善（タブ化、フィルタリング）
+
+### Phase 4: レスポンシブ＆最終ポリッシュ
+
+- モバイル対応
+  - サイドバー → ボトムシート化
+  - タッチ対応（ドラッグ/スワイプ）
+  - ピンチズーム
+- スケルトンローディング（コンテンツ読み込み中の UI）
+- エンプティステート（データなし時の改善 UI）
+- アクセシビリティ
+  - ARIA ラベル / ロール
+  - フォーカストラップ（モーダル）
+  - キーボード操作の完全対応

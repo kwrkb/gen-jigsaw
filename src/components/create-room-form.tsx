@@ -42,7 +42,10 @@ export function CreateRoomForm({ onCreated, onError }: CreateRoomFormProps) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+        className="px-4 py-2 text-white font-medium transition-colors"
+        style={{ background: "var(--color-accent)", borderRadius: "var(--radius-md)" }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-accent-hover)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "var(--color-accent)")}
       >
         + 新しいルーム
       </button>
@@ -58,20 +61,34 @@ export function CreateRoomForm({ onCreated, onError }: CreateRoomFormProps) {
         placeholder="ルーム名"
         maxLength={100}
         autoFocus
-        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        className="flex-1 px-3 py-2 text-sm outline-none transition-all"
+        style={{
+          background: "var(--color-surface-1)",
+          border: "1.5px solid var(--color-surface-3)",
+          borderRadius: "var(--radius-md)",
+          color: "var(--color-text-primary)",
+        }}
+        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-accent)")}
+        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-surface-3)")}
         disabled={loading}
       />
       <button
         type="submit"
         disabled={loading || !name.trim()}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
+        className="px-4 py-2 text-white font-medium disabled:opacity-50 transition-colors text-sm"
+        style={{ background: "var(--color-accent)", borderRadius: "var(--radius-md)" }}
+        onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--color-accent-hover)"; }}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "var(--color-accent)")}
       >
         {loading ? "作成中..." : "作成"}
       </button>
       <button
         type="button"
         onClick={() => setOpen(false)}
-        className="px-3 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
+        className="px-3 py-2 text-sm transition-colors"
+        style={{ color: "var(--color-text-muted)" }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text-secondary)")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
       >
         キャンセル
       </button>

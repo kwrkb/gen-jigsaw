@@ -18,7 +18,10 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div
+          className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
+        />
       </div>
     );
   }
@@ -40,19 +43,32 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+    <div className="min-h-screen" style={{ background: "var(--color-surface-0)" }}>
+      <header
+        className="px-6 py-4"
+        style={{
+          background: "var(--color-surface-1)",
+          boxShadow: "var(--shadow-sm)",
+          borderBottom: "1px solid var(--color-border)",
+        }}
+      >
         <div className="max-w-2xl mx-auto flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-            🧩 Gen-Jigsaw
+          <h1
+            className="text-xl font-bold"
+            style={{ fontFamily: "var(--font-display), sans-serif", color: "var(--color-text-primary)" }}
+          >
+            Gen-Jigsaw
           </h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
               {user.displayName}
             </span>
             <button
               onClick={logout}
-              className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="text-sm transition-colors"
+              style={{ color: "var(--color-text-muted)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text-secondary)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
             >
               ログアウト
             </button>
@@ -62,7 +78,7 @@ export default function Home() {
 
       <main className="max-w-2xl mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
             ルーム一覧
           </h2>
           <CreateRoomForm

@@ -153,7 +153,8 @@ export function TileGrid({
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-hidden relative cursor-grab active:cursor-grabbing bg-gray-100 dark:bg-gray-900"
+      className="flex-1 overflow-hidden relative cursor-grab active:cursor-grabbing"
+      style={{ background: "var(--color-canvas-bg)" }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -207,19 +208,40 @@ export function TileGrid({
       <div className="absolute bottom-4 right-4 flex gap-2">
         <button
           onClick={() => setScale((s) => Math.min(s * 1.2, 3))}
-          className="w-8 h-8 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+          className="w-8 h-8 flex items-center justify-center transition-colors"
+          style={{
+            background: "var(--color-surface-1)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius-sm)",
+            boxShadow: "var(--shadow-sm)",
+            color: "var(--color-text-secondary)",
+          }}
         >
           +
         </button>
         <button
           onClick={() => setScale(1)}
-          className="w-8 h-8 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow flex items-center justify-center text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+          className="w-8 h-8 flex items-center justify-center text-xs transition-colors"
+          style={{
+            background: "var(--color-surface-1)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius-sm)",
+            boxShadow: "var(--shadow-sm)",
+            color: "var(--color-text-secondary)",
+          }}
         >
           1x
         </button>
         <button
           onClick={() => setScale((s) => Math.max(s * 0.8, 0.3))}
-          className="w-8 h-8 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+          className="w-8 h-8 flex items-center justify-center transition-colors"
+          style={{
+            background: "var(--color-surface-1)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--radius-sm)",
+            boxShadow: "var(--shadow-sm)",
+            color: "var(--color-text-secondary)",
+          }}
         >
           -
         </button>

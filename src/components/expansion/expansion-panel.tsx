@@ -121,21 +121,37 @@ export function ExpansionPanel({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md mx-4">
+    <div
+      className="fixed inset-0 flex items-center justify-center z-40"
+      style={{ background: "var(--color-overlay)" }}
+    >
+      <div
+        className="w-full max-w-md mx-4 p-6"
+        style={{
+          background: "var(--color-surface-1)",
+          borderRadius: "var(--radius-xl)",
+          boxShadow: "var(--shadow-xl)",
+        }}
+      >
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2
+              className="text-lg font-semibold"
+              style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-display), sans-serif" }}
+            >
               タイル拡張
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-sm mt-1" style={{ color: "var(--color-text-muted)" }}>
               位置: ({targetX}, {targetY}) — 方向: {DIRECTION_LABELS[direction]}
             </p>
           </div>
           {step !== "generating" && (
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none"
+              className="text-xl leading-none transition-colors"
+              style={{ color: "var(--color-text-muted)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text-primary)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
             >
               ×
             </button>
@@ -144,18 +160,24 @@ export function ExpansionPanel({
 
         {step === "generating" ? (
           <div className="flex flex-col items-center gap-4 py-8">
-            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-gray-600 dark:text-gray-400">画像を生成中...</p>
+            <div
+              className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
+              style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
+            />
+            <p style={{ color: "var(--color-text-secondary)" }}>画像を生成中...</p>
           </div>
         ) : step === "done" ? (
           <div className="flex flex-col items-center gap-4 py-8">
             <div className="text-4xl">✅</div>
-            <p className="text-gray-700 dark:text-gray-300 text-center">
+            <p className="text-center" style={{ color: "var(--color-text-secondary)" }}>
               生成完了！ルームオーナーが候補を採用するまでお待ちください。
             </p>
             <button
               onClick={onClose}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-6 py-2 text-white transition-colors"
+              style={{ background: "var(--color-accent)", borderRadius: "var(--radius-md)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-accent-hover)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "var(--color-accent)")}
             >
               閉じる
             </button>
@@ -163,7 +185,7 @@ export function ExpansionPanel({
         ) : (
           <form onSubmit={handleGenerate} className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium mb-1" style={{ color: "var(--color-text-secondary)" }}>
                 プロンプト
               </label>
               <textarea
@@ -171,7 +193,15 @@ export function ExpansionPanel({
                 onChange={(e) => setPromptText(e.target.value)}
                 placeholder="生成したい風景や画像の説明を入力..."
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                className="w-full px-3 py-2 text-sm resize-none outline-none transition-all"
+                style={{
+                  background: "var(--color-surface-0)",
+                  border: "1.5px solid var(--color-surface-3)",
+                  borderRadius: "var(--radius-md)",
+                  color: "var(--color-text-primary)",
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-accent)")}
+                onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-surface-3)")}
                 autoFocus
               />
             </div>
@@ -179,14 +209,20 @@ export function ExpansionPanel({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm"
+                className="px-4 py-2 text-sm transition-colors"
+                style={{ color: "var(--color-text-muted)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text-primary)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
               >
                 キャンセル
               </button>
               <button
                 type="submit"
                 disabled={!promptText.trim()}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                className="px-6 py-2 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                style={{ background: "var(--color-accent)", borderRadius: "var(--radius-md)" }}
+                onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--color-accent-hover)"; }}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "var(--color-accent)")}
               >
                 生成する
               </button>

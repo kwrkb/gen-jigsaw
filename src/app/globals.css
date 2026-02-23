@@ -1,18 +1,124 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* === Surface === */
+  --color-surface-0: #faf8f5;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f5f0eb;
+  --color-surface-3: #ebe4dc;
+
+  /* === Text === */
+  --color-text-primary: #2c2418;
+  --color-text-secondary: #7a6e5f;
+  --color-text-muted: #a89d8f;
+
+  /* === Accent (Terracotta) === */
+  --color-accent: #d4654a;
+  --color-accent-hover: #c05538;
+  --color-accent-light: #fdf0ed;
+
+  /* === Status === */
+  --color-success: #5a9a6b;
+  --color-error: #c94444;
+  --color-info: #5b8fb9;
+  --color-warning: #c9943a;
+
+  /* === Canvas === */
+  --color-canvas-bg: #eee8e0;
+  --color-canvas-empty: #f5f0eb;
+  --color-canvas-expandable: var(--color-accent-light);
+
+  /* === Shadows === */
+  --shadow-sm: 0 1px 3px rgba(44, 36, 24, 0.06), 0 1px 2px rgba(44, 36, 24, 0.04);
+  --shadow-md: 0 4px 12px rgba(44, 36, 24, 0.08), 0 2px 4px rgba(44, 36, 24, 0.04);
+  --shadow-lg: 0 12px 32px rgba(44, 36, 24, 0.1), 0 4px 8px rgba(44, 36, 24, 0.06);
+  --shadow-xl: 0 24px 48px rgba(44, 36, 24, 0.14), 0 8px 16px rgba(44, 36, 24, 0.08);
+
+  /* === Border Radius === */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* === Overlay === */
+  --color-overlay: rgba(44, 36, 24, 0.5);
+
+  /* === Border === */
+  --color-border: #ebe4dc;
+  --color-border-hover: var(--color-accent);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* === Surface (Dark) === */
+    --color-surface-0: #1a1714;
+    --color-surface-1: #231f1b;
+    --color-surface-2: #2e2923;
+    --color-surface-3: #3a342c;
+
+    /* === Text (Dark) === */
+    --color-text-primary: #f0ebe5;
+    --color-text-secondary: #a89d8f;
+    --color-text-muted: #7a6e5f;
+
+    /* === Accent (Dark) === */
+    --color-accent: #e07a60;
+    --color-accent-hover: #d4654a;
+    --color-accent-light: #3a2520;
+
+    /* === Status (Dark) === */
+    --color-success: #6db87e;
+    --color-error: #e05a5a;
+    --color-info: #6da3cf;
+    --color-warning: #d9a84e;
+
+    /* === Canvas (Dark) === */
+    --color-canvas-bg: #1a1714;
+    --color-canvas-empty: #2e2923;
+    --color-canvas-expandable: var(--color-accent-light);
+
+    /* === Shadows (Dark) === */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
+    --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.4), 0 8px 16px rgba(0, 0, 0, 0.25);
+
+    /* === Overlay (Dark) === */
+    --color-overlay: rgba(0, 0, 0, 0.6);
+
+    /* === Border (Dark) === */
+    --color-border: #3a342c;
+    --color-border-hover: var(--color-accent);
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-surface-0);
+  color: var(--color-text-primary);
+  font-family: var(--font-body), "Noto Sans JP", system-ui, sans-serif;
+}
+
+/* === Custom Scrollbar === */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-muted);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-text-muted) transparent;
 }
