@@ -16,20 +16,17 @@ export const CreateUserSchema = z.object({
 
 export const CreateRoomSchema = z.object({
   name: z.string().min(1).max(100),
-  userId: z.string().min(1),
   stylePreset: z.string().optional(),
 });
 
 export const AcquireLockSchema = z.object({
   x: z.number().int(),
   y: z.number().int(),
-  userId: z.string().min(1),
 });
 
 export const ReleaseLockSchema = z.object({
   x: z.number().int(),
   y: z.number().int(),
-  userId: z.string().min(1),
 });
 
 export const CreateExpansionSchema = z.object({
@@ -41,17 +38,10 @@ export const CreateExpansionSchema = z.object({
     text: z.string().min(1),
     style: z.string().optional(),
   }),
-  userId: z.string().min(1),
 });
 
-export const AdoptExpansionSchema = z.object({
-  userId: z.string().min(1),
-});
+export const AdoptExpansionSchema = z.object({});
 
-export const RunExpansionSchema = z.object({
-  userId: z.string().min(1),
-});
+export const RunExpansionSchema = z.object({}).or(z.null()).optional();
 
-export const RejectExpansionSchema = z.object({
-  userId: z.string().min(1),
-});
+export const RejectExpansionSchema = z.object({});

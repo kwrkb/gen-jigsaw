@@ -1,19 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { badRequest, conflict, forbidden, notFound } from "@/lib/errors";
+import {
+  badRequest,
+  conflict,
+  forbidden,
+  notFound,
+  unauthorized,
+} from "@/lib/errors";
 import { AdoptExpansionSchema } from "@/lib/validation";
 import { createId } from "@paralleldrive/cuid2";
+import { getUserIdFromSession } from "@/lib/auth";
+import { emitRoomEvent } from "@/lib/sse-emitter";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const userId = await getUserIdFromSession(req);
+  if (!userId) return unauthorized("Login required");
+
   const body = await req.json().catch(() => null);
   const parsed = AdoptExpansionSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.message);
-
-  const { userId } = parsed.data;
 
   const expansion = await prisma.expansion.findUnique({ where: { id } });
   if (!expansion) return notFound("Expansion not found");
@@ -58,5 +67,6 @@ export async function POST(
     }),
   ]);
 
+  emitRoomEvent(expansion.roomId, "room_update");
   return NextResponse.json({ tile, expansion: updatedExpansion });
 }

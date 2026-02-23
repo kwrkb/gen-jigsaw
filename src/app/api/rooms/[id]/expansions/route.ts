@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { badRequest, conflict, notFound } from "@/lib/errors";
+import { badRequest, conflict, notFound, unauthorized } from "@/lib/errors";
 import { CreateExpansionSchema } from "@/lib/validation";
 import { createId } from "@paralleldrive/cuid2";
+import { getUserIdFromSession } from "@/lib/auth";
+import { emitRoomEvent } from "@/lib/sse-emitter";
 
 // 方向からdeltaを取得
 const DIRECTION_DELTA: Record<string, { dx: number; dy: number }> = {
@@ -17,12 +19,14 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: roomId } = await params;
+  const userId = await getUserIdFromSession(req);
+  if (!userId) return unauthorized("Login required");
+
   const body = await req.json().catch(() => null);
   const parsed = CreateExpansionSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.message);
 
-  const { fromTileId, targetX, targetY, direction, promptJson, userId } =
-    parsed.data;
+  const { fromTileId, targetX, targetY, direction, promptJson } = parsed.data;
 
   const room = await prisma.room.findUnique({ where: { id: roomId } });
   if (!room) return notFound("Room not found");
@@ -73,5 +77,6 @@ export async function POST(
     },
   });
 
+  emitRoomEvent(roomId, "room_update");
   return NextResponse.json(expansion, { status: 201 });
 }
