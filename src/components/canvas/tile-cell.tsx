@@ -2,7 +2,9 @@
 
 import { memo } from "react";
 import Image from "next/image";
-import type { Tile, Expansion, Lock } from "@/types";
+import { motion, AnimatePresence } from "framer-motion";
+import { Lock, Plus, Loader2, Check, X, RefreshCw } from "lucide-react";
+import type { Tile, Expansion, Lock as LockType } from "@/types";
 
 const CELL_SIZE = 256;
 
@@ -10,7 +12,7 @@ interface TileCellProps {
   x: number;
   y: number;
   tile?: Tile;
-  lock?: Lock;
+  lock?: LockType;
   expansion?: Expansion;
   isExpansionTarget?: boolean;
   userId: string;
@@ -48,8 +50,11 @@ export const TileCell = memo(function TileCell({
   if (tile) {
     // タイルがある場合
     return (
-      <div
-        className="relative overflow-hidden"
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="relative overflow-hidden group"
         style={{
           width: CELL_SIZE,
           height: CELL_SIZE,
@@ -61,76 +66,93 @@ export const TileCell = memo(function TileCell({
           alt={`Tile (${x}, ${y})`}
           width={CELL_SIZE}
           height={CELL_SIZE}
-          className="object-cover"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
           unoptimized
         />
-        {isGeneratingInitial && (
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center gap-2"
-            style={{ background: "var(--color-overlay)" }}
-          >
-            <div
-              className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
-              style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
-            />
-            <span className="text-xs text-white font-medium">初期画像を生成中...</span>
-          </div>
-        )}
-        {isFailedInitial && onRetryInitial && (
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center gap-2"
-            style={{ background: "var(--color-overlay)" }}
-          >
-            <span className="text-xs text-white font-medium">生成に失敗しました</span>
-            <button
-              onClick={onRetryInitial}
-              className="px-3 py-1 text-white text-xs font-medium transition-opacity hover:opacity-90"
-              style={{ background: "var(--color-accent)", borderRadius: "var(--radius-sm)" }}
+        <AnimatePresence>
+          {isGeneratingInitial && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-20"
+              style={{ background: "var(--color-overlay)" }}
             >
-              リトライ
-            </button>
-          </div>
-        )}
-        {expansion && expansion.status === "DONE" && isOwner && (
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center gap-2"
-            style={{ background: "var(--color-overlay)" }}
-          >
-            <Image
-              src={expansion.resultImageUrl!}
-              alt="候補"
-              width={CELL_SIZE}
-              height={CELL_SIZE}
-              className="absolute inset-0 w-full h-full object-cover opacity-60"
-              unoptimized
-            />
-            <div className="relative z-10 flex gap-2">
+              <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--color-accent)" }} />
+              <span className="text-xs text-white font-medium">初期画像を生成中...</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {isFailedInitial && onRetryInitial && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-20"
+              style={{ background: "var(--color-overlay)" }}
+            >
+              <span className="text-xs text-white font-medium">生成に失敗しました</span>
               <button
-                onClick={() => onAdopt(expansion)}
-                className="px-3 py-1 text-white text-xs font-medium transition-opacity hover:opacity-90"
-                style={{ background: "var(--color-success)", borderRadius: "var(--radius-sm)" }}
+                onClick={onRetryInitial}
+                className="px-3 py-1.5 text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                style={{ background: "var(--color-accent)", borderRadius: "var(--radius-md)" }}
               >
-                採用
+                <RefreshCw size={14} />
+                リトライ
               </button>
-              <button
-                onClick={() => onReject(expansion)}
-                className="px-3 py-1 text-white text-xs font-medium transition-opacity hover:opacity-90"
-                style={{ background: "var(--color-error)", borderRadius: "var(--radius-sm)" }}
-              >
-                却下
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {expansion && expansion.status === "DONE" && isOwner && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-30"
+              style={{ background: "var(--color-overlay)" }}
+            >
+              <Image
+                src={expansion.resultImageUrl!}
+                alt="候補"
+                width={CELL_SIZE}
+                height={CELL_SIZE}
+                className="absolute inset-0 w-full h-full object-cover opacity-60"
+                unoptimized
+              />
+              <div className="relative z-10 flex gap-2">
+                <button
+                  onClick={() => onAdopt(expansion)}
+                  className="px-4 py-2 text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-lg"
+                  style={{ background: "var(--color-success)", borderRadius: "var(--radius-md)" }}
+                >
+                  <Check size={16} />
+                  採用
+                </button>
+                <button
+                  onClick={() => onReject(expansion)}
+                  className="px-4 py-2 text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-lg"
+                  style={{ background: "var(--color-error)", borderRadius: "var(--radius-md)" }}
+                >
+                  <X size={16} />
+                  却下
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     );
   }
 
   if (expansion) {
     // 拡張中（ロック中 or 生成中）
     return (
-      <div
-        className="relative flex flex-col items-center justify-center gap-2"
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="relative flex flex-col items-center justify-center gap-2 overflow-hidden"
         style={{
           width: CELL_SIZE,
           height: CELL_SIZE,
@@ -139,13 +161,10 @@ export const TileCell = memo(function TileCell({
         }}
       >
         {expansion.status === "RUNNING" ? (
-          <>
-            <div
-              className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
-              style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
-            />
-            <span className="text-xs" style={{ color: "var(--color-accent)" }}>生成中...</span>
-          </>
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--color-accent)" }} />
+            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-accent)" }}>Generating</span>
+          </div>
         ) : expansion.status === "DONE" ? (
           <>
             {expansion.resultImageUrl && (
@@ -158,47 +177,52 @@ export const TileCell = memo(function TileCell({
                 unoptimized
               />
             )}
-            {isOwner && (
-              <div
-                className="absolute inset-0 flex flex-col items-center justify-center gap-2"
-                style={{ background: "var(--color-overlay)" }}
-              >
-                <span className="text-white text-xs font-medium">候補あり</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onAdopt(expansion)}
-                    className="px-3 py-1 text-white text-xs font-medium transition-opacity hover:opacity-90"
-                    style={{ background: "var(--color-success)", borderRadius: "var(--radius-sm)" }}
-                  >
-                    採用
-                  </button>
-                  <button
-                    onClick={() => onReject(expansion)}
-                    className="px-3 py-1 text-white text-xs font-medium transition-opacity hover:opacity-90"
-                    style={{ background: "var(--color-error)", borderRadius: "var(--radius-sm)" }}
-                  >
-                    却下
-                  </button>
-                </div>
-              </div>
-            )}
+            <AnimatePresence>
+              {isOwner && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10"
+                  style={{ background: "var(--color-overlay)" }}
+                >
+                  <span className="text-white text-xs font-bold uppercase tracking-widest">Candidate ready</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onAdopt(expansion)}
+                      className="px-4 py-2 text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-lg"
+                      style={{ background: "var(--color-success)", borderRadius: "var(--radius-md)" }}
+                    >
+                      <Check size={16} />
+                      採用
+                    </button>
+                    <button
+                      onClick={() => onReject(expansion)}
+                      className="px-4 py-2 text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-lg"
+                      style={{ background: "var(--color-error)", borderRadius: "var(--radius-md)" }}
+                    >
+                      <X size={16} />
+                      却下
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         ) : (
-          <>
-            <div
-              className="w-6 h-6 border-4 border-t-transparent rounded-full animate-spin"
-              style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
-            />
-            <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>待機中</span>
-          </>
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-6 h-6 animate-spin opacity-50" style={{ color: "var(--color-accent)" }} />
+            <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Waiting</span>
+          </div>
         )}
-        <div
-          className="absolute top-1 right-1 text-white text-xs px-1 py-0.5"
-          style={{ background: "var(--color-accent)", borderRadius: "var(--radius-sm)" }}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="absolute bottom-2 right-2 text-white text-[10px] font-bold px-2 py-0.5 shadow-sm uppercase tracking-tighter"
+          style={{ background: "var(--color-accent)", borderRadius: "var(--radius-full)" }}
         >
-          {isMyLock ? "自分" : "他"}
-        </div>
-      </div>
+          {isMyLock ? "Your Lock" : "Other Lock"}
+        </motion.div>
+      </motion.div>
     );
   }
 
@@ -207,47 +231,39 @@ export const TileCell = memo(function TileCell({
     const isLocked = activeLock && !isMyLock;
 
     return (
-      <div
-        className="relative flex items-center justify-center cursor-pointer transition-all"
+      <motion.div
+        whileHover={!isLocked ? { scale: 0.98 } : {}}
+        whileTap={!isLocked ? { scale: 0.95 } : {}}
+        className="relative flex items-center justify-center cursor-pointer transition-all duration-300 group overflow-hidden"
         style={{
           width: CELL_SIZE,
           height: CELL_SIZE,
           border: isLocked
             ? "2px dashed var(--color-error)"
-            : "2px dashed var(--color-text-muted)",
+            : "2px dashed var(--color-border)",
           background: isLocked
             ? "color-mix(in srgb, var(--color-error) 5%, transparent)"
             : "var(--color-canvas-expandable)",
           cursor: isLocked ? "not-allowed" : "pointer",
         }}
         onClick={() => !isLocked && onExpand(x, y, adjacentTile)}
-        onMouseEnter={(e) => {
-          if (!isLocked) {
-            e.currentTarget.style.borderColor = "var(--color-accent)";
-            e.currentTarget.style.background = "var(--color-accent-light)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isLocked) {
-            e.currentTarget.style.borderColor = "var(--color-text-muted)";
-            e.currentTarget.style.background = "var(--color-canvas-expandable)";
-          }
-        }}
       >
+        <div 
+          className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"
+          style={{ background: "var(--color-accent)" }}
+        />
+        
         {isLocked ? (
-          <div className="flex flex-col items-center gap-1" style={{ color: "var(--color-error)" }}>
-            <span className="text-2xl">🔒</span>
-            <span className="text-xs">ロック中</span>
+          <div className="flex flex-col items-center gap-2" style={{ color: "var(--color-error)" }}>
+            <Lock className="w-6 h-6" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Locked</span>
           </div>
         ) : (
-          <span
-            className="text-4xl select-none transition-colors"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            +
-          </span>
+          <div className="flex flex-col items-center gap-2 transition-all duration-300 group-hover:scale-110" style={{ color: "var(--color-text-muted)" }}>
+            <Plus className="w-8 h-8 group-hover:text-accent transition-colors" style={{ color: "inherit" }} />
+          </div>
         )}
-      </div>
+      </motion.div>
     );
   }
 

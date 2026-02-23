@@ -36,8 +36,14 @@
   - [x] expansion/expansion-panel.tsx: モーダルカラートークン化
   - [x] expansion/candidate-list.tsx: バッジ・ボタンカラートークン化
   - [x] room/[id]/page.tsx: ルームページ全体のトークン化
-- [in_progress] Phase 2: コンポーネントポリッシュ（lucide-react / framer-motion 導入）
-- [ ] Phase 3: キャンバス体験の深化
+- [completed] Phase 2: コンポーネントポリッシュ（lucide-react / framer-motion 導入）
+  - [x] アイコン置換: emoji (🧩, 🔒, ✅ 等) → lucide-react アイコンコンポーネント
+  - [x] アニメーション導入: framer-motion による状態遷移アニメーション
+    - [x] tile-cell: タイル出現時の fade-in / scale-in
+    - [x] expansion-panel: モーダルの open/close アニメーション
+    - [x] toast: スライドイン / スライドアウト
+    - [x] user-setup / room-list / candidate-list: 視覚的洗練と導入アニメーション
+- [in_progress] Phase 3: キャンバス体験の深化
 - [ ] Phase 4: レスポンシブ＆最終ポリッシュ
 
 ### Steps（初期画像生成 + DB クリーンアップ）
@@ -59,8 +65,8 @@
   - [x] dalle2-provider: `executeWithRetry` にリトライ+DL+アップロードを共通化
 
 ### Notes
-- 依存追加（`npm install`）は `getaddrinfo EAI_AGAIN registry.npmjs.org` により開発環境でのローカル実行は未完了。
-- 2026-02-23 の UI/UX 実装では `lucide-react` / `framer-motion` の `npm install` がハングし、依存導入は保留（Phase 2 継続中）。
+- 2026-02-23: `lucide-react` / `framer-motion` をインストールし、UI/UX Phase 2 を完了。主要コンポーネントのアイコンを Lucide に置換し、Framer Motion による滑らかなアニメーションを導入。
+- 依存追加（`npm install`）はネットワーク状況が改善し、ローカル環境でも実行可能となった。
 - コードと `package.json` は PR にコミット済み。CI 環境（GitHub Actions）で `npm install` が実行される。
 - `npx tsc --noEmit` / `npm run build` / `npm test` のローカル実行は CI に委譲。
 - **要対応 Issues**: ~~#3（SSE スケール）~~、~~#4（画像ストレージ）~~ → PR #10 で対応済み。Issue #5/#6/#7/#8 は修正済み。
