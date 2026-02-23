@@ -66,6 +66,7 @@
 
 ### Notes
 - 2026-02-23: `lucide-react` / `framer-motion` をインストールし、UI/UX Phase 2 を完了。主要コンポーネントのアイコンを Lucide に置換し、Framer Motion による滑らかなアニメーションを導入。
+- 2026-02-23: PR #17（missing hooks 復元 + path traversal 修正）をマージ後、PR #16 のレビュー指摘対応を実施。未定義CSS変数の追加、dark:ハードコード除去、日英混在テキストの日本語統一、AnimatePresence 統合、ホバーボーダー復元、スコープ外 GEMINI.md の除外。
 - 依存追加（`npm install`）はネットワーク状況が改善し、ローカル環境でも実行可能となった。
 - コードと `package.json` は PR にコミット済み。CI 環境（GitHub Actions）で `npm install` が実行される。
 - `npx tsc --noEmit` / `npm run build` / `npm test` のローカル実行は CI に委譲。
@@ -232,17 +233,18 @@
 
 ## 今後の UI/UX 改善計画
 
-### Phase 2: コンポーネントポリッシュ
+### Phase 2: コンポーネントポリッシュ（完了）
 
 **依存追加:** `npm install lucide-react framer-motion`
 
-- [ ] アイコン置換: emoji (🧩, 🔒, ✅ 等) → lucide-react アイコンコンポーネント
-- [ ] アニメーション導入: framer-motion による状態遷移アニメーション
-  - tile-cell: タイル出現時の fade-in / scale-in
-  - tile-grid: グリッド全体のレイアウトアニメーション
-  - expansion-panel: モーダルの open/close アニメーション
-  - candidate-list: リストアイテムの stagger アニメーション
-  - toast: スライドイン / スライドアウト
+- [x] アイコン置換: emoji (🧩, 🔒, ✅ 等) → lucide-react アイコンコンポーネント
+- [x] アニメーション導入: framer-motion による状態遷移アニメーション
+  - [x] tile-cell: タイル出現時の fade-in / scale-in
+  - [x] expansion-panel: モーダルの open/close アニメーション
+  - [x] candidate-list: アイコン化・スタイリング改善
+  - [x] toast: スライドイン / スライドアウト
+  - [x] user-setup / room-list: 視覚的洗練と導入アニメーション
+- [x] レビュー指摘対応: CSS変数定義追加、dark:ハードコード除去、日本語統一、AnimatePresence統合、ホバーボーダー復元
 
 ### Phase 3: キャンバス体験の深化
 
