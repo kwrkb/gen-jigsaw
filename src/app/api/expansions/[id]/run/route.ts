@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { badRequest, conflict, notFound, serverError } from "@/lib/errors";
+import {
+  badRequest,
+  conflict,
+  notFound,
+  serverError,
+  unauthorized,
+} from "@/lib/errors";
 import { RunExpansionSchema, DirectionSchema } from "@/lib/validation";
 import { getImageGenProvider } from "@/lib/image-gen";
+import { getUserIdFromSession } from "@/lib/auth";
+import { emitRoomEvent } from "@/lib/sse-emitter";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const userId = await getUserIdFromSession(req);
+  if (!userId) return unauthorized("Login required");
+
   const body = await req.json().catch(() => null);
   const parsed = RunExpansionSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.message);
@@ -31,6 +42,7 @@ export async function POST(
     where: { id },
     data: { status: "RUNNING" },
   });
+  emitRoomEvent(expansion.roomId, "room_update");
 
   try {
     const provider = getImageGenProvider();
@@ -53,6 +65,7 @@ export async function POST(
       },
     });
 
+    emitRoomEvent(expansion.roomId, "room_update");
     return NextResponse.json(updated);
   } catch (err) {
     // FAILEDに変更 + ロック解放
@@ -69,6 +82,7 @@ export async function POST(
         },
       }),
     ]);
+    emitRoomEvent(expansion.roomId, "room_update");
     console.error("Image generation failed:", err);
     return serverError("Image generation failed");
   }

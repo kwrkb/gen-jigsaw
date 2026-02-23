@@ -15,7 +15,6 @@ interface ExpansionPanelProps {
   targetY: number;
   fromTile: Tile;
   roomId: string;
-  userId: string;
   onComplete: () => void;
   onClose: () => void;
   onError: (msg: string) => void;
@@ -28,7 +27,6 @@ export function ExpansionPanel({
   targetY,
   fromTile,
   roomId,
-  userId,
   onComplete,
   onClose,
   onError,
@@ -56,7 +54,7 @@ export function ExpansionPanel({
       const lockRes = await fetch(`/api/rooms/${roomId}/locks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ x: targetX, y: targetY, userId }),
+        body: JSON.stringify({ x: targetX, y: targetY }),
       });
 
       if (!lockRes.ok) {
@@ -70,15 +68,14 @@ export function ExpansionPanel({
       const expRes = await fetch(`/api/rooms/${roomId}/expansions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fromTileId: fromTile.id,
-          targetX,
-          targetY,
-          direction,
-          promptJson: { text: promptText.trim() },
-          userId,
-        }),
-      });
+          body: JSON.stringify({
+            fromTileId: fromTile.id,
+            targetX,
+            targetY,
+            direction,
+            promptJson: { text: promptText.trim() },
+          }),
+        });
 
       if (!expRes.ok) {
         const data = await expRes.json().catch(() => ({}));
@@ -86,7 +83,7 @@ export function ExpansionPanel({
         await fetch(`/api/rooms/${roomId}/locks`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ x: targetX, y: targetY, userId }),
+          body: JSON.stringify({ x: targetX, y: targetY }),
         });
         onError(data.error ?? "拡張の作成に失敗しました");
         setStep("input");
@@ -99,7 +96,7 @@ export function ExpansionPanel({
       const runRes = await fetch(`/api/expansions/${expansion.id}/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({}),
       });
 
       if (!runRes.ok) {
@@ -108,7 +105,7 @@ export function ExpansionPanel({
         await fetch(`/api/rooms/${roomId}/locks`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ x: targetX, y: targetY, userId }),
+          body: JSON.stringify({ x: targetX, y: targetY }),
         }).catch(() => {});
         onError(data.error ?? "画像生成に失敗しました");
         setStep("input");

@@ -82,7 +82,7 @@ export default function RoomPage({ params }: RoomPageProps) {
       const res = await fetch(`/api/expansions/${expansion.id}/adopt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user!.id }),
+        body: JSON.stringify({}),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -101,7 +101,7 @@ export default function RoomPage({ params }: RoomPageProps) {
       const res = await fetch(`/api/expansions/${expansion.id}/reject`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user!.id }),
+        body: JSON.stringify({}),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -181,7 +181,6 @@ export default function RoomPage({ params }: RoomPageProps) {
           targetY={expandTarget.y}
           fromTile={expandTarget.fromTile}
           roomId={roomId}
-          userId={user.id}
           onComplete={() => {
             addToast("生成完了！オーナーの採用を待ちます", "success");
             refetch();

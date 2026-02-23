@@ -3,12 +3,11 @@
 import { useState, FormEvent } from "react";
 
 interface CreateRoomFormProps {
-  userId: string;
   onCreated: (roomId: string) => void;
   onError: (message: string) => void;
 }
 
-export function CreateRoomForm({ userId, onCreated, onError }: CreateRoomFormProps) {
+export function CreateRoomForm({ onCreated, onError }: CreateRoomFormProps) {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -21,7 +20,7 @@ export function CreateRoomForm({ userId, onCreated, onError }: CreateRoomFormPro
       const res = await fetch("/api/rooms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), userId }),
+        body: JSON.stringify({ name: name.trim() }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

@@ -20,6 +20,10 @@ export function forbidden(message = "Forbidden") {
   return errorResponse(message, 403);
 }
 
+export function unauthorized(message = "Unauthorized") {
+  return errorResponse(message, 401);
+}
+
 export function serverError(message = "Internal server error") {
   return errorResponse(message, 500);
 }

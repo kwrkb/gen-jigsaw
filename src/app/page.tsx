@@ -66,7 +66,6 @@ export default function Home() {
             ルーム一覧
           </h2>
           <CreateRoomForm
-            userId={user.id}
             onCreated={handleRoomCreated}
             onError={(msg) => addToast(msg, "error")}
           />
