@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, FormEvent, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle2, X, Loader2, Sparkles } from "lucide-react";
 import type { Tile } from "@/types";
 
 const DIRECTION_LABELS = {
@@ -132,117 +134,148 @@ export function ExpansionPanel({
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center z-40"
-      style={{ background: "var(--color-overlay)" }}
+      className="fixed inset-0 flex items-center justify-center z-40 p-4"
       role="dialog"
       aria-modal="true"
       aria-label="タイル拡張ダイアログ"
     >
-      <div
-        className="w-full max-w-md mx-4 p-6"
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0"
+        style={{ background: "var(--color-overlay)" }}
+        onClick={step !== "generating" ? onClose : undefined}
+      />
+      
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="relative w-full max-w-md overflow-hidden"
         style={{
           background: "var(--color-surface-1)",
-          borderRadius: "var(--radius-xl)",
-          boxShadow: "var(--shadow-xl)",
+          borderRadius: "var(--radius-2xl)",
+          boxShadow: "var(--shadow-2xl)",
         }}
       >
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h2
-              className="text-lg font-semibold"
-              style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-display), sans-serif" }}
-            >
-              タイル拡張
-            </h2>
-            <p className="text-sm mt-1" style={{ color: "var(--color-text-muted)" }}>
-              位置: ({targetX}, {targetY}) — 方向: {DIRECTION_LABELS[direction]}
-            </p>
-          </div>
-          {step !== "generating" && (
-            <button
-              onClick={onClose}
-              className="text-xl leading-none transition-colors"
-              style={{ color: "var(--color-text-muted)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text-primary)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
-            >
-              ×
-            </button>
-          )}
-        </div>
-
-        {step === "generating" ? (
-          <div className="flex flex-col items-center gap-4 py-8">
-            <div
-              className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
-              style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
-            />
-            <p style={{ color: "var(--color-text-secondary)" }}>画像を生成中...</p>
-          </div>
-        ) : step === "done" ? (
-          <div className="flex flex-col items-center gap-4 py-8">
-            <div className="text-4xl">✅</div>
-            <p className="text-center" style={{ color: "var(--color-text-secondary)" }}>
-              生成完了！ルームオーナーが候補を採用するまでお待ちください。
-            </p>
-            <button
-              onClick={onClose}
-              className="px-6 py-2 text-white transition-colors"
-              style={{ background: "var(--color-accent)", borderRadius: "var(--radius-md)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-accent-hover)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "var(--color-accent)")}
-            >
-              閉じる
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleGenerate} className="flex flex-col gap-4">
+        <div className="p-6">
+          <div className="flex justify-between items-start mb-6">
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: "var(--color-text-secondary)" }}>
-                プロンプト
-              </label>
-              <textarea
-                value={promptText}
-                onChange={(e) => setPromptText(e.target.value)}
-                placeholder="生成したい風景や画像の説明を入力..."
-                rows={4}
-                className="w-full px-3 py-2 text-sm resize-none outline-none transition-all"
-                style={{
-                  background: "var(--color-surface-0)",
-                  border: "1.5px solid var(--color-surface-3)",
-                  borderRadius: "var(--radius-md)",
-                  color: "var(--color-text-primary)",
-                }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-accent)")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-surface-3)")}
-                autoFocus
-              />
+              <h2
+                className="text-xl font-bold tracking-tight"
+                style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-display), sans-serif" }}
+              >
+                タイル拡張
+              </h2>
+              <p className="text-xs mt-1 font-medium tracking-widest" style={{ color: "var(--color-text-muted)" }}>
+                位置: ({targetX}, {targetY}) • 方向: {DIRECTION_LABELS[direction]}
+              </p>
             </div>
-            <div className="flex gap-3 justify-end">
+            {step !== "generating" && (
               <button
-                type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm transition-colors"
+                className="p-1 rounded-full transition-colors"
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-surface-2)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 style={{ color: "var(--color-text-muted)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text-primary)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
               >
-                キャンセル
+                <X size={20} />
               </button>
-              <button
-                type="submit"
-                disabled={!promptText.trim()}
-                className="px-6 py-2 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                style={{ background: "var(--color-accent)", borderRadius: "var(--radius-md)" }}
-                onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--color-accent-hover)"; }}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "var(--color-accent)")}
+            )}
+          </div>
+
+          <AnimatePresence mode="wait">
+            {step === "generating" ? (
+              <motion.div
+                key="generating"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex flex-col items-center gap-4 py-8"
               >
-                生成する
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
+                <Loader2 className="w-12 h-12 animate-spin" style={{ color: "var(--color-accent)" }} />
+                <p className="font-medium" style={{ color: "var(--color-text-secondary)" }}>画像を生成中...</p>
+              </motion.div>
+            ) : step === "done" ? (
+              <motion.div
+                key="done"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="flex flex-col items-center gap-4 py-8 text-center"
+              >
+                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "var(--color-success-subtle)" }}>
+                  <CheckCircle2 className="w-10 h-10" style={{ color: "var(--color-success)" }} />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>生成完了！</h3>
+                  <p className="text-sm px-4" style={{ color: "var(--color-text-secondary)" }}>
+                    ルームオーナーが候補を採用するまでお待ちください。
+                  </p>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="mt-4 px-8 py-2.5 text-white font-bold shadow-lg transition-all hover:scale-105 active:scale-95"
+                  style={{ background: "var(--color-accent)", borderRadius: "var(--radius-lg)" }}
+                >
+                  閉じる
+                </button>
+              </motion.div>
+            ) : (
+              <motion.form
+                key="input"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onSubmit={handleGenerate}
+                className="flex flex-col gap-5"
+              >
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest flex items-center gap-1.5" style={{ color: "var(--color-text-secondary)" }}>
+                    <Sparkles size={14} className="text-accent" />
+                    プロンプト
+                  </label>
+                  <textarea
+                    value={promptText}
+                    onChange={(e) => setPromptText(e.target.value)}
+                    placeholder="生成したい風景や画像の説明を入力..."
+                    rows={4}
+                    className="w-full px-4 py-3 text-sm resize-none outline-none transition-all"
+                    style={{
+                      background: "var(--color-surface-0)",
+                      border: "2px solid var(--color-surface-3)",
+                      borderRadius: "var(--radius-lg)",
+                      color: "var(--color-text-primary)",
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "var(--color-accent)")}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = "var(--color-surface-3)")}
+                    autoFocus
+                  />
+                </div>
+                <div className="flex gap-3 justify-end items-center pt-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 text-sm font-medium transition-colors hover:text-primary"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!promptText.trim()}
+                    className="px-8 py-2.5 text-white font-bold disabled:opacity-30 disabled:grayscale transition-all hover:scale-105 active:scale-95 shadow-md"
+                    style={{ background: "var(--color-accent)", borderRadius: "var(--radius-lg)" }}
+                  >
+                    生成する
+                  </button>
+                </div>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
     </div>
   );
 }
