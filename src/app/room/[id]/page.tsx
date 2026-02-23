@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, useRef, use, useCallback } from "react";
 import Link from "next/link";
 import { useUser } from "@/hooks/use-user";
 import { useRoom } from "@/hooks/use-room";
@@ -98,11 +98,11 @@ export default function RoomPage({ params }: RoomPageProps) {
     }
   }, [isOwner, room.initialTileStatus, room.initialPrompt, roomId]);
 
-  function handleExpand(x: number, y: number, fromTile: Tile) {
+  const handleExpand = useCallback((x: number, y: number, fromTile: Tile) => {
     setExpandTarget({ x, y, fromTile });
-  }
+  }, []);
 
-  async function handleAdopt(expansion: Expansion) {
+  const handleAdopt = useCallback(async (expansion: Expansion) => {
     try {
       const res = await fetch(`/api/expansions/${expansion.id}/adopt`, {
         method: "POST",
@@ -119,9 +119,9 @@ export default function RoomPage({ params }: RoomPageProps) {
     } catch {
       addToast("ネットワークエラー", "error");
     }
-  }
+  }, [addToast, refetch]);
 
-  async function handleRetryInitial() {
+  const handleRetryInitial = useCallback(async () => {
     try {
       const res = await fetch(`/api/rooms/${roomId}/generate-initial`, {
         method: "POST",
@@ -136,9 +136,9 @@ export default function RoomPage({ params }: RoomPageProps) {
     } catch {
       addToast("ネットワークエラー", "error");
     }
-  }
+  }, [roomId, addToast, refetch]);
 
-  async function handleReject(expansion: Expansion) {
+  const handleReject = useCallback(async (expansion: Expansion) => {
     try {
       const res = await fetch(`/api/expansions/${expansion.id}/reject`, {
         method: "POST",
@@ -155,7 +155,7 @@ export default function RoomPage({ params }: RoomPageProps) {
     } catch {
       addToast("ネットワークエラー", "error");
     }
-  }
+  }, [addToast, refetch]);
 
   return (
     <div className="h-screen flex flex-col" style={{ background: "var(--color-surface-0)" }}>

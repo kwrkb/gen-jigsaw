@@ -2,7 +2,10 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { createId } from "@paralleldrive/cuid2";
 
-const LOCK_TTL_SECONDS = 90;
+const LOCK_TTL_SECONDS = (() => {
+  const ttl = parseInt(process.env.LOCK_TTL_SECONDS ?? "90", 10);
+  return isNaN(ttl) ? 90 : ttl;
+})();
 
 export async function acquireLock(
   roomId: string,

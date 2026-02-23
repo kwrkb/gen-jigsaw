@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Image from "next/image";
 import type { Tile, Expansion, Lock } from "@/types";
 
@@ -23,7 +24,7 @@ interface TileCellProps {
   onRetryInitial?: () => void;
 }
 
-export function TileCell({
+export const TileCell = memo(function TileCell({
   x,
   y,
   tile,
@@ -260,4 +261,4 @@ export function TileCell({
       }}
     />
   );
-}
+});

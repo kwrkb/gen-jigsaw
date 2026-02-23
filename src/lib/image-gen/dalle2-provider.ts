@@ -36,7 +36,7 @@ export async function loadReferenceImage(imageUrl: string): Promise<Buffer> {
   const targetPath = resolve(publicDir, trimmed);
 
   const rel = relative(publicDir, targetPath);
-  if (rel === "" || rel.startsWith("..") || isAbsolute(rel)) {
+  if (rel.startsWith("..") || isAbsolute(rel) || rel === "") {
     throw new Error("Invalid reference image URL");
   }
 
