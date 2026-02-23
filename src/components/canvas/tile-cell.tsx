@@ -18,6 +18,9 @@ interface TileCellProps {
   onAdopt: (expansion: Expansion) => void;
   onReject: (expansion: Expansion) => void;
   adjacentTile?: Tile; // 拡張元タイル
+  isGeneratingInitial?: boolean;
+  isFailedInitial?: boolean;
+  onRetryInitial?: () => void;
 }
 
 export function TileCell({
@@ -33,6 +36,9 @@ export function TileCell({
   onAdopt,
   onReject,
   adjacentTile,
+  isGeneratingInitial,
+  isFailedInitial,
+  onRetryInitial,
 }: TileCellProps) {
   const now = new Date();
   const activeLock = lock && new Date(lock.expiresAt) > now;
@@ -57,6 +63,33 @@ export function TileCell({
           className="object-cover"
           unoptimized
         />
+        {isGeneratingInitial && (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2"
+            style={{ background: "var(--color-overlay)" }}
+          >
+            <div
+              className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
+              style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
+            />
+            <span className="text-xs text-white font-medium">初期画像を生成中...</span>
+          </div>
+        )}
+        {isFailedInitial && onRetryInitial && (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2"
+            style={{ background: "var(--color-overlay)" }}
+          >
+            <span className="text-xs text-white font-medium">生成に失敗しました</span>
+            <button
+              onClick={onRetryInitial}
+              className="px-3 py-1 text-white text-xs font-medium transition-opacity hover:opacity-90"
+              style={{ background: "var(--color-accent)", borderRadius: "var(--radius-sm)" }}
+            >
+              リトライ
+            </button>
+          </div>
+        )}
         {expansion && expansion.status === "DONE" && isOwner && (
           <div
             className="absolute inset-0 flex flex-col items-center justify-center gap-2"

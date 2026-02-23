@@ -17,6 +17,10 @@ export const CreateUserSchema = z.object({
 export const CreateRoomSchema = z.object({
   name: z.string().min(1).max(100),
   stylePreset: z.string().optional(),
+  prompt: z.object({
+    text: z.string().min(1).max(500),
+    style: z.string().optional(),
+  }),
 });
 
 export const AcquireLockSchema = z.object({

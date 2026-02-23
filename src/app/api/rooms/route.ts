@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   const parsed = CreateRoomSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.message);
 
-  const { name, stylePreset } = parsed.data;
+  const { name, stylePreset, prompt } = parsed.data;
 
   // ユーザー存在確認
   const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
         name,
         ownerUserId: userId,
         stylePreset: stylePreset ?? null,
+        initialPrompt: JSON.stringify(prompt),
+        initialTileStatus: "PENDING",
       },
     }),
     prisma.tile.create({

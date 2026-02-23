@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import Link from "next/link";
 import { useUser } from "@/hooks/use-user";
 import { useRoom } from "@/hooks/use-room";
@@ -78,6 +78,25 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   const isOwner = room.ownerUserId === user.id;
 
+  // PENDING 状態の初期タイルを自動トリガー（オーナーのみ）
+  const initialTriggerFired = useRef(false);
+  useEffect(() => {
+    if (
+      isOwner &&
+      room.initialTileStatus === "PENDING" &&
+      room.initialPrompt &&
+      !initialTriggerFired.current
+    ) {
+      initialTriggerFired.current = true;
+      fetch(`/api/rooms/${roomId}/generate-initial`, { method: "POST" }).catch(
+        () => {
+          // ポーリングで状態確認されるため、ここでのエラーは無視
+          initialTriggerFired.current = false;
+        }
+      );
+    }
+  }, [isOwner, room.initialTileStatus, room.initialPrompt, roomId]);
+
   function handleExpand(x: number, y: number, fromTile: Tile) {
     setExpandTarget({ x, y, fromTile });
   }
@@ -95,6 +114,23 @@ export default function RoomPage({ params }: RoomPageProps) {
         return;
       }
       addToast("タイルを採用しました！", "success");
+      refetch();
+    } catch {
+      addToast("ネットワークエラー", "error");
+    }
+  }
+
+  async function handleRetryInitial() {
+    try {
+      const res = await fetch(`/api/rooms/${roomId}/generate-initial`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        addToast(data.error ?? "リトライに失敗しました", "error");
+        return;
+      }
+      addToast("初期画像を再生成しています...", "info");
       refetch();
     } catch {
       addToast("ネットワークエラー", "error");
@@ -173,6 +209,7 @@ export default function RoomPage({ params }: RoomPageProps) {
           onExpand={handleExpand}
           onAdopt={handleAdopt}
           onReject={handleReject}
+          onRetryInitial={handleRetryInitial}
         />
 
         {/* サイドパネル */}
