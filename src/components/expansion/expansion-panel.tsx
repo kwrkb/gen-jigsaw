@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import type { Tile } from "@/types";
 
 const DIRECTION_LABELS = {
@@ -33,6 +33,16 @@ export function ExpansionPanel({
 }: ExpansionPanelProps) {
   const [promptText, setPromptText] = useState("");
   const [step, setStep] = useState<Step>("input");
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && step !== "generating") {
+        onClose();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose, step]);
 
   // 方向を自動判定
   const dx = targetX - fromTile.x;
@@ -124,6 +134,9 @@ export function ExpansionPanel({
     <div
       className="fixed inset-0 flex items-center justify-center z-40"
       style={{ background: "var(--color-overlay)" }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="タイル拡張ダイアログ"
     >
       <div
         className="w-full max-w-md mx-4 p-6"

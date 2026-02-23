@@ -20,12 +20,14 @@ export function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
         <div
           key={toast.id}
           onClick={() => onRemove(toast.id)}
-          className="px-4 py-3 cursor-pointer text-white text-sm max-w-xs transition-all"
+          className="toast-enter px-4 py-3 cursor-pointer text-white text-sm max-w-xs transition-all"
           style={{
             background: TOAST_COLORS[toast.type] ?? "var(--color-info)",
             borderRadius: "var(--radius-md)",
             boxShadow: "var(--shadow-md)",
           }}
+          role="status"
+          aria-live="polite"
         >
           {toast.message}
         </div>

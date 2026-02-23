@@ -76,9 +76,9 @@ export function TileGrid({
   onRetryInitial,
 }: TileGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const pointerIdRef = useRef<number | null>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
-  const isDragging = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
 
   const bounds = useMemo(() => getGridBounds(room.tiles), [room.tiles]);
@@ -113,55 +113,129 @@ export function TileGrid({
     return map;
   }, [room.expansions]);
 
-  // 初期オフセット（グリッドを中央に）
-  useEffect(() => {
+  const fitToView = useCallback(() => {
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
-      const gridW = cols * CELL_SIZE * scale;
-      const gridH = rows * CELL_SIZE * scale;
+      const padding = 32;
+      const nextScale = Math.min(
+        1.4,
+        Math.max(
+          0.3,
+          Math.min(
+            (rect.width - padding * 2) / (cols * CELL_SIZE),
+            (rect.height - padding * 2) / (rows * CELL_SIZE)
+          )
+        )
+      );
+      const gridW = cols * CELL_SIZE * nextScale;
+      const gridH = rows * CELL_SIZE * nextScale;
+      setScale(nextScale);
       setOffset({
         x: (rect.width - gridW) / 2,
         y: (rect.height - gridH) / 2,
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 初回のみ
+  }, [cols, rows]);
 
-  // パン操作
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    isDragging.current = true;
-    lastPos.current = { x: e.clientX, y: e.clientY };
+  // 初期オフセット（グリッドを中央に）— 初回マウント時のみ
+  const hasFittedRef = useRef(false);
+  useEffect(() => {
+    if (!hasFittedRef.current) {
+      hasFittedRef.current = true;
+      fitToView();
+    }
+  }, [fitToView]);
+
+  const beginPan = useCallback((clientX: number, clientY: number) => {
+    lastPos.current = { x: clientX, y: clientY };
   }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging.current) return;
-    const dx = e.clientX - lastPos.current.x;
-    const dy = e.clientY - lastPos.current.y;
-    lastPos.current = { x: e.clientX, y: e.clientY };
+  const movePan = useCallback((clientX: number, clientY: number) => {
+    const dx = clientX - lastPos.current.x;
+    const dy = clientY - lastPos.current.y;
+    lastPos.current = { x: clientX, y: clientY };
     setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
   }, []);
 
-  const handleMouseUp = useCallback(() => {
-    isDragging.current = false;
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // 子要素のボタン/リンクのクリックを奪わないよう、インタラクティブ要素は除外
+    if (pointerIdRef.current !== null) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button, a, input, [role='button']")) return;
+    pointerIdRef.current = e.pointerId;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    beginPan(e.clientX, e.clientY);
+  }, [beginPan]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (pointerIdRef.current !== e.pointerId) return;
+    movePan(e.clientX, e.clientY);
+  }, [movePan]);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (pointerIdRef.current !== e.pointerId) return;
+    pointerIdRef.current = null;
+    e.currentTarget.releasePointerCapture(e.pointerId);
   }, []);
 
   // ズーム操作
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setScale((prev) => Math.min(Math.max(prev * delta, 0.3), 3));
+    const delta = e.deltaY > 0 ? -0.08 : 0.08;
+    setScale((prev) => Math.min(Math.max(prev + delta, 0.3), 3));
   }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setOffset((prev) => ({ ...prev, y: prev.y + 32 }));
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setOffset((prev) => ({ ...prev, y: prev.y - 32 }));
+      return;
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      setOffset((prev) => ({ ...prev, x: prev.x + 32 }));
+      return;
+    }
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      setOffset((prev) => ({ ...prev, x: prev.x - 32 }));
+      return;
+    }
+    if (e.key === "+" || e.key === "=") {
+      e.preventDefault();
+      setScale((prev) => Math.min(prev + 0.1, 3));
+      return;
+    }
+    if (e.key === "-") {
+      e.preventDefault();
+      setScale((prev) => Math.max(prev - 0.1, 0.3));
+      return;
+    }
+    if (e.key.toLowerCase() === "f") {
+      e.preventDefault();
+      fitToView();
+    }
+  }, [fitToView]);
 
   return (
     <div
       ref={containerRef}
       className="flex-1 overflow-hidden relative cursor-grab active:cursor-grabbing"
-      style={{ background: "var(--color-canvas-bg)" }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      style={{ background: "var(--color-canvas-bg)", touchAction: "none" }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       onWheel={handleWheel}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="application"
+      aria-label="タイルキャンバス。ドラッグまたは矢印キーで移動、ホイールか+/-でズーム、Fキーで全体表示します。"
     >
       <div
         style={{
@@ -173,7 +247,6 @@ export function TileGrid({
           gridTemplateRows: `repeat(${rows}, ${CELL_SIZE}px)`,
           gap: 0,
         }}
-        onMouseDown={(e) => e.stopPropagation()}
       >
         {Array.from({ length: rows }, (_, rowIdx) =>
           Array.from({ length: cols }, (_, colIdx) => {
@@ -215,46 +288,67 @@ export function TileGrid({
       </div>
 
       {/* ズームコントロール */}
-      <div className="absolute bottom-4 right-4 flex gap-2">
+      <div
+        className="absolute bottom-4 right-4 flex items-center gap-2 p-2"
+        style={{
+          background: "color-mix(in srgb, var(--color-surface-1) 92%, transparent)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--radius-md)",
+          boxShadow: "var(--shadow-sm)",
+        }}
+      >
         <button
-          onClick={() => setScale((s) => Math.min(s * 1.2, 3))}
+          onClick={() => setScale((s) => Math.min(s + 0.1, 3))}
           className="w-8 h-8 flex items-center justify-center transition-colors"
           style={{
             background: "var(--color-surface-1)",
             border: "1px solid var(--color-border)",
             borderRadius: "var(--radius-sm)",
-            boxShadow: "var(--shadow-sm)",
             color: "var(--color-text-secondary)",
           }}
+          aria-label="ズームイン"
         >
           +
         </button>
+        <input
+          type="range"
+          min={0.3}
+          max={3}
+          step={0.1}
+          value={scale}
+          onChange={(e) => setScale(Number(e.target.value))}
+          className="w-20"
+          aria-label="ズーム倍率"
+        />
         <button
-          onClick={() => setScale(1)}
-          className="w-8 h-8 flex items-center justify-center text-xs transition-colors"
+          onClick={fitToView}
+          className="h-8 px-2 flex items-center justify-center text-xs transition-colors"
           style={{
             background: "var(--color-surface-1)",
             border: "1px solid var(--color-border)",
             borderRadius: "var(--radius-sm)",
-            boxShadow: "var(--shadow-sm)",
             color: "var(--color-text-secondary)",
           }}
+          aria-label="全体表示"
         >
-          1x
+          Fit
         </button>
         <button
-          onClick={() => setScale((s) => Math.max(s * 0.8, 0.3))}
+          onClick={() => setScale((s) => Math.max(s - 0.1, 0.3))}
           className="w-8 h-8 flex items-center justify-center transition-colors"
           style={{
             background: "var(--color-surface-1)",
             border: "1px solid var(--color-border)",
             borderRadius: "var(--radius-sm)",
-            boxShadow: "var(--shadow-sm)",
             color: "var(--color-text-secondary)",
           }}
+          aria-label="ズームアウト"
         >
           -
         </button>
+        <span className="text-xs tabular-nums min-w-10 text-right" style={{ color: "var(--color-text-muted)" }}>
+          {Math.round(scale * 100)}%
+        </span>
       </div>
     </div>
   );
