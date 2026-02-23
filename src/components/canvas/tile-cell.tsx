@@ -72,6 +72,7 @@ export const TileCell = memo(function TileCell({
         <AnimatePresence>
           {isGeneratingInitial && (
             <motion.div
+              key="generating"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -82,10 +83,9 @@ export const TileCell = memo(function TileCell({
               <span className="text-xs text-white font-medium">初期画像を生成中...</span>
             </motion.div>
           )}
-        </AnimatePresence>
-        <AnimatePresence>
           {isFailedInitial && onRetryInitial && (
             <motion.div
+              key="failed"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -103,10 +103,9 @@ export const TileCell = memo(function TileCell({
               </button>
             </motion.div>
           )}
-        </AnimatePresence>
-        <AnimatePresence>
           {expansion && expansion.status === "DONE" && isOwner && (
             <motion.div
+              key="done"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -247,8 +246,20 @@ export const TileCell = memo(function TileCell({
           cursor: isLocked ? "not-allowed" : "pointer",
         }}
         onClick={() => !isLocked && onExpand(x, y, adjacentTile)}
+        onMouseEnter={(e) => {
+          if (!isLocked) {
+            e.currentTarget.style.borderColor = "var(--color-accent)";
+            e.currentTarget.style.background = "var(--color-accent-light)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isLocked) {
+            e.currentTarget.style.borderColor = "var(--color-border)";
+            e.currentTarget.style.background = "var(--color-canvas-expandable)";
+          }
+        }}
       >
-        <div 
+        <div
           className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"
           style={{ background: "var(--color-accent)" }}
         />
