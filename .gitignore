@@ -41,3 +41,4 @@ refs
 HEAD
 tsconfig.tsbuildinfo
 worklog/
+status/

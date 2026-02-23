@@ -2,6 +2,14 @@
   "name": "gen-jigsaw",
   "version": "0.1.0",
   "private": true,
+  "description": "Collaborative AI-powered outpainting puzzle — expand a shared world, one tile at a time",
+  "license": "MIT",
+  "author": "kwrkb",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kwrkb/gen-jigsaw.git"
+  },
+  "homepage": "https://github.com/kwrkb/gen-jigsaw",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
