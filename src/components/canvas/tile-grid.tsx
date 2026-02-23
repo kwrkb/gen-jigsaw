@@ -137,9 +137,13 @@ export function TileGrid({
     }
   }, [cols, rows]);
 
-  // 初期オフセット（グリッドを中央に）
+  // 初期オフセット（グリッドを中央に）— 初回マウント時のみ
+  const hasFittedRef = useRef(false);
   useEffect(() => {
-    fitToView();
+    if (!hasFittedRef.current) {
+      hasFittedRef.current = true;
+      fitToView();
+    }
   }, [fitToView]);
 
   const beginPan = useCallback((clientX: number, clientY: number) => {
@@ -154,7 +158,10 @@ export function TileGrid({
   }, []);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // 子要素のボタン/リンクのクリックを奪わないよう、インタラクティブ要素は除外
     if (pointerIdRef.current !== null) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button, a, input, [role='button']")) return;
     pointerIdRef.current = e.pointerId;
     e.currentTarget.setPointerCapture(e.pointerId);
     beginPan(e.clientX, e.clientY);
@@ -240,7 +247,6 @@ export function TileGrid({
           gridTemplateRows: `repeat(${rows}, ${CELL_SIZE}px)`,
           gap: 0,
         }}
-        onMouseDown={(e) => e.stopPropagation()}
       >
         {Array.from({ length: rows }, (_, rowIdx) =>
           Array.from({ length: cols }, (_, colIdx) => {
