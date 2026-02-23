@@ -1,4 +1,5 @@
-import { mkdirSync, writeFileSync } from "fs";
+import { mkdirSync } from "fs";
+import { writeFile } from "fs/promises";
 import { join } from "path";
 import type { StorageProvider } from "./provider";
 
@@ -15,7 +16,7 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   async upload(buffer: Buffer, filename: string): Promise<string> {
-    writeFileSync(join(this.dir, filename), buffer);
+    await writeFile(join(this.dir, filename), buffer);
     return `/generated/${filename}`;
   }
 }
