@@ -34,11 +34,14 @@ public/generated/*
 .idea
 .vscode
 .claude/
-config
-hooks
-objects
-refs
-HEAD
+
+# Internal .git files (if accidentally copied to root)
+# config
+# hooks
+# objects
+# refs
+# HEAD
+
 tsconfig.tsbuildinfo
 worklog/
 status/

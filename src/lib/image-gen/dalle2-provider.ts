@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { join } from "path";
+import { join, resolve, relative, isAbsolute } from "path";
 import { createId } from "@paralleldrive/cuid2";
 import { getStorageProvider } from "@/lib/storage";
 import OpenAI from "openai";
@@ -25,14 +25,22 @@ async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function loadReferenceImage(imageUrl: string): Promise<Buffer> {
+export async function loadReferenceImage(imageUrl: string): Promise<Buffer> {
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     const res = await fetch(imageUrl);
     if (!res.ok) throw new Error(`Failed to fetch reference image: ${res.status}`);
     return Buffer.from(await res.arrayBuffer());
   }
   const trimmed = imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl;
-  return readFileSync(join(process.cwd(), "public", trimmed));
+  const publicDir = join(process.cwd(), "public");
+  const targetPath = resolve(publicDir, trimmed);
+
+  const rel = relative(publicDir, targetPath);
+  if (rel === "" || rel.startsWith("..") || isAbsolute(rel)) {
+    throw new Error("Invalid reference image URL");
+  }
+
+  return readFileSync(targetPath);
 }
 
 function createMaskBuffer(size: number, direction: Direction): Buffer {
