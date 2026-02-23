@@ -43,7 +43,7 @@
     - [x] expansion-panel: モーダルの open/close アニメーション
     - [x] toast: スライドイン / スライドアウト
     - [x] user-setup / room-list / candidate-list: 視覚的洗練と導入アニメーション
-- [in_progress] Phase 3: キャンバス体験の深化
+- [completed] Phase 3: キャンバス体験の深化
 - [ ] Phase 4: レスポンシブ＆最終ポリッシュ
 
 ### Steps（初期画像生成 + DB クリーンアップ）
@@ -65,6 +65,7 @@
   - [x] dalle2-provider: `executeWithRetry` にリトライ+DL+アップロードを共通化
 
 ### Notes
+- 2026-02-23: UI/UX Phase 3 を完了。`tile-cell` にフレーム効果を追加し、拡張セルをパルス演出＋アイコン強化で再設計。`candidate-list` はタブ化（進行中/採用待ち/履歴）とステータスフィルタを実装。
 - 2026-02-23: `lucide-react` / `framer-motion` をインストールし、UI/UX Phase 2 を完了。主要コンポーネントのアイコンを Lucide に置換し、Framer Motion による滑らかなアニメーションを導入。
 - 2026-02-23: PR #17（missing hooks 復元 + path traversal 修正）をマージ後、PR #16 のレビュー指摘対応を実施。未定義CSS変数の追加、dark:ハードコード除去、日英混在テキストの日本語統一、AnimatePresence 統合、ホバーボーダー復元、スコープ外 GEMINI.md の除外。
 - 依存追加（`npm install`）はネットワーク状況が改善し、ローカル環境でも実行可能となった。
@@ -248,12 +249,12 @@
 
 ### Phase 3: キャンバス体験の深化
 
-- [ ] タイル画像フレーム効果（subtle shadow / border treatment）
-- [ ] 拡張セル再デザイン（パルスアニメーション、アイコン改善）
+- [x] タイル画像フレーム効果（subtle shadow / border treatment）
+- [x] 拡張セル再デザイン（パルスアニメーション、アイコン改善）
 - [x] ズームコントロール改善（スライダー、フィットビュー）
 - [x] キーボードナビゲーション（矢印キーでセル移動）
 - [x] ヘッダー改善（モバイル候補パネル導線を追加）
-- [ ] サイドバー改善（タブ化、フィルタリング）
+- [x] サイドバー改善（タブ化、フィルタリング）
 
 ### Phase 4: レスポンシブ＆最終ポリッシュ
 

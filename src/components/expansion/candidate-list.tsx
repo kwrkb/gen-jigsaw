@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Check, X, Loader2, ImageOff, Layers, MapPin } from "lucide-react";
 import type { Expansion } from "@/types";
@@ -21,15 +21,65 @@ const STATUS_LABELS: Record<string, string> = {
   ADOPTED: "採用済",
 };
 
+type CandidateTab = "active" | "ready" | "history";
+type StatusFilter = "ALL" | Expansion["status"];
+
+const TAB_CONFIG: Record<CandidateTab, { label: string; statuses: Expansion["status"][] }> = {
+  active: { label: "進行中", statuses: ["QUEUED", "RUNNING", "DONE"] },
+  ready: { label: "採用待ち", statuses: ["DONE"] },
+  history: { label: "履歴", statuses: ["ADOPTED", "REJECTED", "FAILED"] },
+};
+
 export const CandidateList = memo(function CandidateList({
   expansions,
   isOwner,
   onAdopt,
   onReject,
 }: CandidateListProps) {
-  const active = expansions.filter((e) =>
-    ["QUEUED", "RUNNING", "DONE"].includes(e.status)
+  const [tab, setTab] = useState<CandidateTab>("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+
+  const sorted = useMemo(
+    () =>
+      [...expansions].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ),
+    [expansions]
   );
+
+  const tabbed = useMemo(
+    () => sorted.filter((exp) => TAB_CONFIG[tab].statuses.includes(exp.status)),
+    [sorted, tab]
+  );
+
+  const filtered = useMemo(
+    () =>
+      statusFilter === "ALL" ? tabbed : tabbed.filter((exp) => exp.status === statusFilter),
+    [statusFilter, tabbed]
+  );
+
+  const availableStatuses = useMemo(
+    () => [...new Set(tabbed.map((exp) => exp.status))],
+    [tabbed]
+  );
+
+  useEffect(() => {
+    setStatusFilter("ALL");
+  }, [tab]);
+
+  const activeCount = sorted.filter((exp) =>
+    TAB_CONFIG.active.statuses.includes(exp.status)
+  ).length;
+
+  const getEmptyMessage = () => {
+    if (tab === "history") {
+      return "まだ履歴はありません。採用・却下・失敗した候補がここに表示されます。";
+    }
+    if (tab === "ready") {
+      return "採用待ちの候補はまだありません。生成完了まで少し待ってください。";
+    }
+    return "まだ候補はありません。キャンバスの「+」から拡張を開始できます。";
+  };
 
   return (
     <div className="p-6 border-t" style={{ borderColor: "var(--color-surface-3)" }}>
@@ -41,12 +91,78 @@ export const CandidateList = memo(function CandidateList({
             className="px-1.5 py-0.5 rounded-full text-[10px]"
             style={{ background: "color-mix(in srgb, var(--color-accent) 10%, transparent)", color: "var(--color-accent)" }}
           >
-            {active.length}
+            {activeCount}
           </span>
         </h3>
       </div>
 
-      {active.length === 0 ? (
+      <div className="mb-3 flex items-center gap-2">
+        {(Object.entries(TAB_CONFIG) as [CandidateTab, { label: string; statuses: Expansion["status"][] }][]).map(([key, config]) => {
+          const count = sorted.filter((exp) => config.statuses.includes(exp.status)).length;
+          const isActive = tab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className="px-2.5 py-1 text-[11px] font-bold tracking-wide transition-colors"
+              style={{
+                borderRadius: "var(--radius-full)",
+                border: "1px solid var(--color-border)",
+                background: isActive
+                  ? "color-mix(in srgb, var(--color-accent) 12%, var(--color-surface-1))"
+                  : "var(--color-surface-1)",
+                color: isActive ? "var(--color-accent)" : "var(--color-text-muted)",
+              }}
+              aria-label={`候補タブ: ${config.label}`}
+            >
+              {config.label} ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      {availableStatuses.length > 1 && (
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("ALL")}
+            className="px-2 py-0.5 text-[10px] font-bold tracking-wide transition-colors"
+            style={{
+              borderRadius: "var(--radius-full)",
+              border: "1px solid var(--color-border)",
+              background: statusFilter === "ALL"
+                ? "color-mix(in srgb, var(--color-accent) 10%, var(--color-surface-1))"
+                : "var(--color-surface-1)",
+              color: statusFilter === "ALL" ? "var(--color-accent)" : "var(--color-text-muted)",
+            }}
+            aria-label="ステータスフィルタ: すべて"
+          >
+            すべて
+          </button>
+          {availableStatuses.map((status) => (
+            <button
+              key={status}
+              type="button"
+              onClick={() => setStatusFilter(status)}
+              className="px-2 py-0.5 text-[10px] font-bold tracking-wide transition-colors"
+              style={{
+                borderRadius: "var(--radius-full)",
+                border: "1px solid var(--color-border)",
+                background: statusFilter === status
+                  ? "color-mix(in srgb, var(--color-accent) 10%, var(--color-surface-1))"
+                  : "var(--color-surface-1)",
+                color: statusFilter === status ? "var(--color-accent)" : "var(--color-text-muted)",
+              }}
+              aria-label={`ステータスフィルタ: ${STATUS_LABELS[status] ?? status}`}
+            >
+              {STATUS_LABELS[status] ?? status}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
         <div
           className="p-8 text-center flex flex-col items-center gap-2"
           style={{
@@ -59,13 +175,12 @@ export const CandidateList = memo(function CandidateList({
             <Layers size={32} />
           </div>
           <p className="text-xs font-medium leading-relaxed opacity-60" style={{ color: "var(--color-text-muted)" }}>
-            まだ候補はありません。<br />
-            キャンバスの「+」から拡張を開始できます。
+            {getEmptyMessage()}
           </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
-          {active.map((exp) => (
+          {filtered.map((exp) => (
             <div
               key={exp.id}
               className="flex items-center gap-4 p-3 transition-all group"
