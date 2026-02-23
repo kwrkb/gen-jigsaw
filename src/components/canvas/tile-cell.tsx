@@ -3,7 +3,7 @@
 import { memo } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock as LockIcon, Plus, Loader2, Check, X, RefreshCw } from "lucide-react";
+import { Lock as LockIcon, Plus, Loader2, Check, X, RefreshCw, Sparkles, Wand2 } from "lucide-react";
 import type { Tile, Expansion, Lock as LockType } from "@/types";
 
 const CELL_SIZE = 256;
@@ -58,7 +58,8 @@ export const TileCell = memo(function TileCell({
         style={{
           width: CELL_SIZE,
           height: CELL_SIZE,
-          border: "1px solid var(--color-border)",
+          border: "1px solid color-mix(in srgb, var(--color-border) 88%, var(--color-surface-3))",
+          boxShadow: "inset 0 1px 0 color-mix(in srgb, white 24%, transparent), 0 10px 24px color-mix(in srgb, black 14%, transparent)",
         }}
       >
         <Image
@@ -68,6 +69,12 @@ export const TileCell = memo(function TileCell({
           height={CELL_SIZE}
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           unoptimized
+        />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "linear-gradient(158deg, color-mix(in srgb, white 10%, transparent) 0%, transparent 46%, color-mix(in srgb, black 8%, transparent) 100%)",
+          }}
         />
         <AnimatePresence>
           {isGeneratingInitial && (
@@ -155,10 +162,17 @@ export const TileCell = memo(function TileCell({
         style={{
           width: CELL_SIZE,
           height: CELL_SIZE,
-          border: "1px solid var(--color-accent)",
-          background: "var(--color-accent-light)",
+          border: "1px solid color-mix(in srgb, var(--color-accent) 45%, var(--color-border))",
+          background: "linear-gradient(145deg, color-mix(in srgb, var(--color-accent-light) 70%, white) 0%, var(--color-accent-light) 42%, color-mix(in srgb, var(--color-canvas-bg) 75%, var(--color-accent-light)) 100%)",
+          boxShadow: "inset 0 0 0 1px color-mix(in srgb, white 24%, transparent)",
         }}
       >
+        <motion.div
+          className="absolute inset-6 rounded-2xl pointer-events-none"
+          style={{ border: "1px dashed color-mix(in srgb, var(--color-accent) 45%, transparent)" }}
+          animate={{ opacity: [0.25, 0.55, 0.25], scale: [0.98, 1.03, 0.98] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+        />
         {expansion.status === "RUNNING" ? (
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--color-accent)" }} />
@@ -271,7 +285,20 @@ export const TileCell = memo(function TileCell({
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 transition-all duration-300 group-hover:scale-110" style={{ color: "var(--color-text-muted)" }}>
-            <Plus className="w-8 h-8 group-hover:text-accent transition-colors" style={{ color: "inherit" }} />
+            <motion.div
+              className="absolute inset-7 rounded-2xl pointer-events-none"
+              style={{ border: "1px dashed color-mix(in srgb, var(--color-accent) 40%, transparent)" }}
+              animate={{ opacity: [0.12, 0.45, 0.12], scale: [0.95, 1.03, 0.95] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <div className="relative w-10 h-10 flex items-center justify-center">
+              <Wand2 className="w-6 h-6 transition-colors" style={{ color: "var(--color-accent)" }} />
+              <Sparkles className="w-3.5 h-3.5 absolute -top-0.5 -right-1" style={{ color: "var(--color-accent)" }} />
+            </div>
+            <div className="flex items-center gap-1">
+              <Plus className="w-3.5 h-3.5" style={{ color: "var(--color-text-muted)" }} />
+              <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--color-text-muted)" }}>拡張</span>
+            </div>
           </div>
         )}
       </motion.div>
