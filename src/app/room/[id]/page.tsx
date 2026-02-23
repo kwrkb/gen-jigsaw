@@ -26,6 +26,7 @@ export default function RoomPage({ params }: RoomPageProps) {
     y: number;
     fromTile: Tile;
   } | null>(null);
+  const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
 
   if (userLoading) {
     return (
@@ -183,6 +184,20 @@ export default function RoomPage({ params }: RoomPageProps) {
           {room.name}
         </h1>
         <div className="flex items-center gap-2 text-sm" style={{ color: "var(--color-text-muted)" }}>
+          <button
+            type="button"
+            onClick={() => setIsMobilePanelOpen(true)}
+            className="md:hidden px-2 py-1 text-xs"
+            style={{
+              color: "var(--color-text-secondary)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--color-surface-0)",
+            }}
+            aria-label="候補パネルを開く"
+          >
+            候補
+          </button>
           {isOwner && (
             <span
               className="px-2 py-0.5 text-xs font-medium"
@@ -214,7 +229,7 @@ export default function RoomPage({ params }: RoomPageProps) {
 
         {/* サイドパネル */}
         <aside
-          className="w-72 flex flex-col overflow-hidden flex-shrink-0"
+          className="hidden md:flex w-72 flex-col overflow-hidden flex-shrink-0"
           style={{
             background: "var(--color-surface-1)",
             borderLeft: "1px solid var(--color-border)",
@@ -241,6 +256,52 @@ export default function RoomPage({ params }: RoomPageProps) {
           </div>
         </aside>
       </div>
+
+      {/* モバイル候補パネル */}
+      {isMobilePanelOpen && (
+        <div className="md:hidden fixed inset-0 z-30" role="dialog" aria-modal="true" aria-label="候補パネル">
+          <button
+            type="button"
+            className="absolute inset-0"
+            style={{ background: "var(--color-overlay)" }}
+            onClick={() => setIsMobilePanelOpen(false)}
+            aria-label="候補パネルを閉じる"
+          />
+          <aside
+            className="absolute bottom-0 left-0 right-0 max-h-[70vh] flex flex-col"
+            style={{
+              background: "var(--color-surface-1)",
+              borderTop: "1px solid var(--color-border)",
+              boxShadow: "var(--shadow-xl)",
+              borderTopLeftRadius: "var(--radius-xl)",
+              borderTopRightRadius: "var(--radius-xl)",
+            }}
+          >
+            <div className="p-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--color-border)" }}>
+              <div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                タイル {room.tiles.length} / 拡張 {room.expansions.length}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobilePanelOpen(false)}
+                className="px-2 py-1 text-xs"
+                style={{ color: "var(--color-text-secondary)" }}
+                aria-label="候補パネルを閉じる"
+              >
+                閉じる
+              </button>
+            </div>
+            <div className="overflow-y-auto">
+              <CandidateList
+                expansions={room.expansions}
+                isOwner={isOwner}
+                onAdopt={handleAdopt}
+                onReject={handleReject}
+              />
+            </div>
+          </aside>
+        </div>
+      )}
 
       {/* 拡張パネル */}
       {expandTarget && (

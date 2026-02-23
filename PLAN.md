@@ -36,23 +36,31 @@
   - [x] expansion/expansion-panel.tsx: モーダルカラートークン化
   - [x] expansion/candidate-list.tsx: バッジ・ボタンカラートークン化
   - [x] room/[id]/page.tsx: ルームページ全体のトークン化
-- [ ] Phase 2: コンポーネントポリッシュ（lucide-react / framer-motion 導入）
+- [in_progress] Phase 2: コンポーネントポリッシュ（lucide-react / framer-motion 導入）
 - [ ] Phase 3: キャンバス体験の深化
 - [ ] Phase 4: レスポンシブ＆最終ポリッシュ
 
 ### Steps（初期画像生成 + DB クリーンアップ）
 - [x] DB クリーンアップ (dev.db 削除 + db:push + generated/ クリア)
 - [x] Phase: 初期画像生成機能
-  - [x] Prisma スキーマ: Room に initialPrompt / initialTileStatus 追加
+  - [x] Prisma スキーマ: Room に initialPrompt / initialTileStatus / updatedAt 追加
   - [x] 型定義: InitialTileStatus, Room 型更新
   - [x] プロバイダー: generateInitial メソッド追加 (provider, mock, dalle2)
   - [x] バリデーション: CreateRoomSchema に prompt 追加
   - [x] API: rooms POST 更新 + generate-initial エンドポイント新規作成
   - [x] UI: ルーム作成フォームに prompt textarea 追加
   - [x] UI: 初期タイル生成中スピナー表示 + 失敗時リトライ
+- [x] PRレビュー指摘対応（PR #11）
+  - [x] generate-initial: `updateMany` によるアトミックな GENERATING 遷移で重複生成防止
+  - [x] generate-initial: GENERATING 状態の5分タイムアウトでスタック回復
+  - [x] generate-initial: `JSON.parse` に try-catch 追加
+  - [x] create-room-form: fire-and-forget 削除、ルームページ側で PENDING 自動トリガー
+  - [x] dalle2-provider: `sanitizePromptText` で制御文字除去+長さ制限（インジェクション対策）
+  - [x] dalle2-provider: `executeWithRetry` にリトライ+DL+アップロードを共通化
 
 ### Notes
 - 依存追加（`npm install`）は `getaddrinfo EAI_AGAIN registry.npmjs.org` により開発環境でのローカル実行は未完了。
+- 2026-02-23 の UI/UX 実装では `lucide-react` / `framer-motion` の `npm install` がハングし、依存導入は保留（Phase 2 継続中）。
 - コードと `package.json` は PR にコミット済み。CI 環境（GitHub Actions）で `npm install` が実行される。
 - `npx tsc --noEmit` / `npm run build` / `npm test` のローカル実行は CI に委譲。
 - **要対応 Issues**: ~~#3（SSE スケール）~~、~~#4（画像ストレージ）~~ → PR #10 で対応済み。Issue #5/#6/#7/#8 は修正済み。
@@ -61,7 +69,7 @@
 ## 現状の把握（2026-02-23 更新）
 
 - **基本機能**: ルーム作成、タイルの拡張、採用/却下、ロック機構は実装済み。
-- **初期画像生成**: ルーム作成時にプロンプトを入力し、初期タイル(0,0)をAI生成可能。`Room.initialPrompt` / `initialTileStatus` で状態管理。`/api/rooms/[id]/generate-initial` エンドポイントで非同期生成。生成中はスピナー表示、失敗時はリトライボタン表示。初期生成完了まで隣接セルの拡張を抑制。
+- **初期画像生成**: ルーム作成時にプロンプトを入力し、初期タイル(0,0)をAI生成可能。`Room.initialPrompt` / `initialTileStatus` / `updatedAt` で状態管理。`/api/rooms/[id]/generate-initial` エンドポイントで非同期生成。生成中はスピナー表示、失敗時はリトライボタン表示。初期生成完了まで隣接セルの拡張を抑制。GENERATING 遷移は `updateMany` による条件付き更新で競合防止。5分経過した GENERATING はスタックとみなし FAILED にリセット。ルームページで PENDING を検知し自動トリガー（fire-and-forget 廃止）。プロンプト入力は `sanitizePromptText` で制御文字除去+長さ制限済み。
 - **画像生成**: `DallE2ImageGenProvider` を実装済み（`src/lib/image-gen/dalle2-provider.ts`）。`IMAGE_GEN_PROVIDER=dalle2` + `OPENAI_API_KEY` 設定で本番動作可能。`OPENAI_API_KEY` 未設定時はコンストラクタで早期エラー。マスク方向修正済み（境界辺を保持側に）。`referenceImageUrl` の外部 URL 対応済み（Issue #8 解決）。**画像保存は `StorageProvider` 抽象化済み**（`STORAGE_PROVIDER` 環境変数で切り替え可能、デフォルト `local`）。S3/R2 プロバイダは未実装だがインターフェース準備済み（Issue #4 対応済み）。`generateInitial()` メソッドを追加し、初期タイル生成に対応（参照画像・マスク不要の `images.generate()` API を使用）。
 - **リアルタイム性**: SSE エンドポイント (`/api/rooms/[id]/events`) 実装済み。`setMaxListeners(0)` 設定済み。`controller.close()` try-catch 保護済み。単一プロセス前提だがアーキテクチャ制約と移行パス（Redis Pub/Sub）を文書化済み（Issue #3 対応済み）。
 - **認証**: `iron-session` による暗号化 Cookie セッション実装済み。`SESSION_SECRET` 検証をモジュールトップレベルで実施。`DELETE /api/session` は bodyless 204 レスポンスに修正済み。
@@ -222,8 +230,8 @@
 
 **依存追加:** `npm install lucide-react framer-motion`
 
-- アイコン置換: emoji (🧩, 🔒, ✅ 等) → lucide-react アイコンコンポーネント
-- アニメーション導入: framer-motion による状態遷移アニメーション
+- [ ] アイコン置換: emoji (🧩, 🔒, ✅ 等) → lucide-react アイコンコンポーネント
+- [ ] アニメーション導入: framer-motion による状態遷移アニメーション
   - tile-cell: タイル出現時の fade-in / scale-in
   - tile-grid: グリッド全体のレイアウトアニメーション
   - expansion-panel: モーダルの open/close アニメーション
@@ -232,22 +240,22 @@
 
 ### Phase 3: キャンバス体験の深化
 
-- タイル画像フレーム効果（subtle shadow / border treatment）
-- 拡張セル再デザイン（パルスアニメーション、アイコン改善）
-- ズームコントロール改善（スライダー、フィットビュー）
-- キーボードナビゲーション（矢印キーでセル移動）
-- ヘッダー改善（ルーム情報表示の充実）
-- サイドバー改善（タブ化、フィルタリング）
+- [ ] タイル画像フレーム効果（subtle shadow / border treatment）
+- [ ] 拡張セル再デザイン（パルスアニメーション、アイコン改善）
+- [x] ズームコントロール改善（スライダー、フィットビュー）
+- [x] キーボードナビゲーション（矢印キーでセル移動）
+- [x] ヘッダー改善（モバイル候補パネル導線を追加）
+- [ ] サイドバー改善（タブ化、フィルタリング）
 
 ### Phase 4: レスポンシブ＆最終ポリッシュ
 
-- モバイル対応
-  - サイドバー → ボトムシート化
-  - タッチ対応（ドラッグ/スワイプ）
-  - ピンチズーム
-- スケルトンローディング（コンテンツ読み込み中の UI）
-- エンプティステート（データなし時の改善 UI）
-- アクセシビリティ
-  - ARIA ラベル / ロール
-  - フォーカストラップ（モーダル）
-  - キーボード操作の完全対応
+- [ ] モバイル対応
+  - [x] サイドバー → ボトムシート化
+  - [x] タッチ対応（ドラッグ/スワイプ）
+  - [ ] ピンチズーム
+- [ ] スケルトンローディング（コンテンツ読み込み中の UI）
+- [x] エンプティステート（候補0件時の改善 UI）
+- [ ] アクセシビリティ
+  - [x] ARIA ラベル / ロール
+  - [ ] フォーカストラップ（モーダル）
+  - [x] キーボード操作の対応（キャンバス移動、Esc でモーダルクローズ）
