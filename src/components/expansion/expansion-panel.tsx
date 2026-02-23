@@ -167,16 +167,18 @@ export function ExpansionPanel({
                 className="text-xl font-bold tracking-tight"
                 style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-display), sans-serif" }}
               >
-                Create Expansion
+                タイル拡張
               </h2>
-              <p className="text-xs mt-1 font-medium uppercase tracking-widest" style={{ color: "var(--color-text-muted)" }}>
-                Pos: ({targetX}, {targetY}) • Dir: {DIRECTION_LABELS[direction]}
+              <p className="text-xs mt-1 font-medium tracking-widest" style={{ color: "var(--color-text-muted)" }}>
+                位置: ({targetX}, {targetY}) • 方向: {DIRECTION_LABELS[direction]}
               </p>
             </div>
             {step !== "generating" && (
               <button
                 onClick={onClose}
-                className="p-1 rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="p-1 rounded-full transition-colors"
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--color-surface-2)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 style={{ color: "var(--color-text-muted)" }}
               >
                 <X size={20} />
@@ -204,11 +206,11 @@ export function ExpansionPanel({
                 exit={{ opacity: 0, scale: 0.9 }}
                 className="flex flex-col items-center gap-4 py-8 text-center"
               >
-                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-green-100 dark:bg-green-900/30">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "var(--color-success-subtle)" }}>
                   <CheckCircle2 className="w-10 h-10" style={{ color: "var(--color-success)" }} />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>Generation Complete!</h3>
+                  <h3 className="text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>生成完了！</h3>
                   <p className="text-sm px-4" style={{ color: "var(--color-text-secondary)" }}>
                     ルームオーナーが候補を採用するまでお待ちください。
                   </p>
@@ -218,7 +220,7 @@ export function ExpansionPanel({
                   className="mt-4 px-8 py-2.5 text-white font-bold shadow-lg transition-all hover:scale-105 active:scale-95"
                   style={{ background: "var(--color-accent)", borderRadius: "var(--radius-lg)" }}
                 >
-                  Close
+                  閉じる
                 </button>
               </motion.div>
             ) : (
@@ -232,12 +234,12 @@ export function ExpansionPanel({
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-widest flex items-center gap-1.5" style={{ color: "var(--color-text-secondary)" }}>
                     <Sparkles size={14} className="text-accent" />
-                    Prompt
+                    プロンプト
                   </label>
                   <textarea
                     value={promptText}
                     onChange={(e) => setPromptText(e.target.value)}
-                    placeholder="Describe what should be in this tile..."
+                    placeholder="生成したい風景や画像の説明を入力..."
                     rows={4}
                     className="w-full px-4 py-3 text-sm resize-none outline-none transition-all"
                     style={{
@@ -258,7 +260,7 @@ export function ExpansionPanel({
                     className="px-4 py-2 text-sm font-medium transition-colors hover:text-primary"
                     style={{ color: "var(--color-text-muted)" }}
                   >
-                    Cancel
+                    キャンセル
                   </button>
                   <button
                     type="submit"
@@ -266,7 +268,7 @@ export function ExpansionPanel({
                     className="px-8 py-2.5 text-white font-bold disabled:opacity-30 disabled:grayscale transition-all hover:scale-105 active:scale-95 shadow-md"
                     style={{ background: "var(--color-accent)", borderRadius: "var(--radius-lg)" }}
                   >
-                    Generate
+                    生成する
                   </button>
                 </div>
               </motion.form>

@@ -36,9 +36,9 @@ export const CandidateList = memo(function CandidateList({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: "var(--color-text-secondary)" }}>
           <Layers size={14} className="text-accent" />
-          Active Candidates
+          候補一覧
           <span 
-            className="px-1.5 py-0.5 rounded-full text-[10px] bg-accent/10 text-accent"
+            className="px-1.5 py-0.5 rounded-full text-[10px]"
             style={{ background: "color-mix(in srgb, var(--color-accent) 10%, transparent)", color: "var(--color-accent)" }}
           >
             {active.length}

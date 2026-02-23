@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layout, User, Calendar, ArrowUpRight, Search, Inbox } from "lucide-react";
+import { Layout, User, Calendar, ArrowUpRight, Inbox } from "lucide-react";
 import type { Room } from "@/types";
 
 interface RoomWithOwner extends Room {
@@ -61,7 +61,7 @@ export function RoomList({ refreshTrigger }: RoomListProps) {
         >
           <Inbox size={32} />
         </div>
-        <h3 className="text-lg font-bold mb-2" style={{ color: "var(--color-text-primary)" }}>No rooms found</h3>
+        <h3 className="text-lg font-bold mb-2" style={{ color: "var(--color-text-primary)" }}>ルームがありません</h3>
         <p className="text-sm max-w-xs leading-relaxed opacity-70" style={{ color: "var(--color-text-muted)" }}>
           まだルームがありません。最初のルームを作成して世界を広げましょう！
         </p>

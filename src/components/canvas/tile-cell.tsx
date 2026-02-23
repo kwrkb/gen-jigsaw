@@ -3,7 +3,7 @@
 import { memo } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Plus, Loader2, Check, X, RefreshCw } from "lucide-react";
+import { Lock as LockIcon, Plus, Loader2, Check, X, RefreshCw } from "lucide-react";
 import type { Tile, Expansion, Lock as LockType } from "@/types";
 
 const CELL_SIZE = 256;
@@ -163,7 +163,7 @@ export const TileCell = memo(function TileCell({
         {expansion.status === "RUNNING" ? (
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--color-accent)" }} />
-            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-accent)" }}>Generating</span>
+            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--color-accent)" }}>生成中</span>
           </div>
         ) : expansion.status === "DONE" ? (
           <>
@@ -185,7 +185,7 @@ export const TileCell = memo(function TileCell({
                   className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10"
                   style={{ background: "var(--color-overlay)" }}
                 >
-                  <span className="text-white text-xs font-bold uppercase tracking-widest">Candidate ready</span>
+                  <span className="text-white text-xs font-bold uppercase tracking-widest">候補あり</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => onAdopt(expansion)}
@@ -211,7 +211,7 @@ export const TileCell = memo(function TileCell({
         ) : (
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-6 h-6 animate-spin opacity-50" style={{ color: "var(--color-accent)" }} />
-            <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>Waiting</span>
+            <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>待機中</span>
           </div>
         )}
         <motion.div
@@ -220,7 +220,7 @@ export const TileCell = memo(function TileCell({
           className="absolute bottom-2 right-2 text-white text-[10px] font-bold px-2 py-0.5 shadow-sm uppercase tracking-tighter"
           style={{ background: "var(--color-accent)", borderRadius: "var(--radius-full)" }}
         >
-          {isMyLock ? "Your Lock" : "Other Lock"}
+          {isMyLock ? "自分" : "他"}
         </motion.div>
       </motion.div>
     );
@@ -255,8 +255,8 @@ export const TileCell = memo(function TileCell({
         
         {isLocked ? (
           <div className="flex flex-col items-center gap-2" style={{ color: "var(--color-error)" }}>
-            <Lock className="w-6 h-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Locked</span>
+            <LockIcon className="w-6 h-6" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">ロック中</span>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 transition-all duration-300 group-hover:scale-110" style={{ color: "var(--color-text-muted)" }}>

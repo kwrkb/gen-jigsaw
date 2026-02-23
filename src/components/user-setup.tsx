@@ -64,8 +64,7 @@ export function UserSetup({ onSetup }: UserSetupProps) {
             Gen-Jigsaw
           </h1>
           <p className="text-sm font-medium leading-relaxed opacity-70" style={{ color: "var(--color-text-muted)" }}>
-            Collaborative AI-powered outpainting puzzle.<br />
-            Expand a shared world, one tile at a time.
+            タイルを繋いで、世界を広げよう
           </p>
         </div>
 
@@ -73,14 +72,14 @@ export function UserSetup({ onSetup }: UserSetupProps) {
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 opacity-70" style={{ color: "var(--color-text-secondary)" }}>
               <User size={14} className="text-accent" />
-              Display Name
+              表示名
             </label>
             <div className="relative group">
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name..."
+                placeholder="あなたの名前"
                 maxLength={50}
                 className="w-full px-5 py-3.5 text-base font-medium outline-none transition-all duration-300"
                 style={{
@@ -98,7 +97,7 @@ export function UserSetup({ onSetup }: UserSetupProps) {
           </div>
           
           {error && (
-            <div className="p-3 text-xs font-bold rounded-lg bg-red-50 dark:bg-red-950/20 text-center" style={{ color: "var(--color-error)" }}>
+            <div className="p-3 text-xs font-bold rounded-lg text-center" style={{ color: "var(--color-error)", background: "var(--color-error-subtle)" }}>
               {error}
             </div>
           )}
@@ -116,11 +115,11 @@ export function UserSetup({ onSetup }: UserSetupProps) {
               {loading ? (
                 <>
                   <Loader2 className="animate-spin" size={20} />
-                  <span>Joining...</span>
+                  <span>作成中...</span>
                 </>
               ) : (
                 <>
-                  <span>Get Started</span>
+                  <span>はじめる</span>
                   <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
                 </>
               )}
