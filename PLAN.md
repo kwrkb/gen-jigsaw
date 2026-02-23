@@ -40,6 +40,17 @@
 - [ ] Phase 3: キャンバス体験の深化
 - [ ] Phase 4: レスポンシブ＆最終ポリッシュ
 
+### Steps（初期画像生成 + DB クリーンアップ）
+- [x] DB クリーンアップ (dev.db 削除 + db:push + generated/ クリア)
+- [x] Phase: 初期画像生成機能
+  - [x] Prisma スキーマ: Room に initialPrompt / initialTileStatus 追加
+  - [x] 型定義: InitialTileStatus, Room 型更新
+  - [x] プロバイダー: generateInitial メソッド追加 (provider, mock, dalle2)
+  - [x] バリデーション: CreateRoomSchema に prompt 追加
+  - [x] API: rooms POST 更新 + generate-initial エンドポイント新規作成
+  - [x] UI: ルーム作成フォームに prompt textarea 追加
+  - [x] UI: 初期タイル生成中スピナー表示 + 失敗時リトライ
+
 ### Notes
 - 依存追加（`npm install`）は `getaddrinfo EAI_AGAIN registry.npmjs.org` により開発環境でのローカル実行は未完了。
 - コードと `package.json` は PR にコミット済み。CI 環境（GitHub Actions）で `npm install` が実行される。
@@ -50,7 +61,8 @@
 ## 現状の把握（2026-02-23 更新）
 
 - **基本機能**: ルーム作成、タイルの拡張、採用/却下、ロック機構は実装済み。
-- **画像生成**: `DallE2ImageGenProvider` を実装済み（`src/lib/image-gen/dalle2-provider.ts`）。`IMAGE_GEN_PROVIDER=dalle2` + `OPENAI_API_KEY` 設定で本番動作可能。`OPENAI_API_KEY` 未設定時はコンストラクタで早期エラー。マスク方向修正済み（境界辺を保持側に）。`referenceImageUrl` の外部 URL 対応済み（Issue #8 解決）。**画像保存は `StorageProvider` 抽象化済み**（`STORAGE_PROVIDER` 環境変数で切り替え可能、デフォルト `local`）。S3/R2 プロバイダは未実装だがインターフェース準備済み（Issue #4 対応済み）。
+- **初期画像生成**: ルーム作成時にプロンプトを入力し、初期タイル(0,0)をAI生成可能。`Room.initialPrompt` / `initialTileStatus` で状態管理。`/api/rooms/[id]/generate-initial` エンドポイントで非同期生成。生成中はスピナー表示、失敗時はリトライボタン表示。初期生成完了まで隣接セルの拡張を抑制。
+- **画像生成**: `DallE2ImageGenProvider` を実装済み（`src/lib/image-gen/dalle2-provider.ts`）。`IMAGE_GEN_PROVIDER=dalle2` + `OPENAI_API_KEY` 設定で本番動作可能。`OPENAI_API_KEY` 未設定時はコンストラクタで早期エラー。マスク方向修正済み（境界辺を保持側に）。`referenceImageUrl` の外部 URL 対応済み（Issue #8 解決）。**画像保存は `StorageProvider` 抽象化済み**（`STORAGE_PROVIDER` 環境変数で切り替え可能、デフォルト `local`）。S3/R2 プロバイダは未実装だがインターフェース準備済み（Issue #4 対応済み）。`generateInitial()` メソッドを追加し、初期タイル生成に対応（参照画像・マスク不要の `images.generate()` API を使用）。
 - **リアルタイム性**: SSE エンドポイント (`/api/rooms/[id]/events`) 実装済み。`setMaxListeners(0)` 設定済み。`controller.close()` try-catch 保護済み。単一プロセス前提だがアーキテクチャ制約と移行パス（Redis Pub/Sub）を文書化済み（Issue #3 対応済み）。
 - **認証**: `iron-session` による暗号化 Cookie セッション実装済み。`SESSION_SECRET` 検証をモジュールトップレベルで実施。`DELETE /api/session` は bodyless 204 レスポンスに修正済み。
 - **FAILED 時ロック解放**: `run/route.ts` のトランザクション処理済み（実装完了）。

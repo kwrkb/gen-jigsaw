@@ -7,10 +7,16 @@ export interface GenerateInput {
   size: number;
 }
 
+export interface GenerateInitialInput {
+  prompt: PromptJson;
+  size: number;
+}
+
 export interface GenerateOutput {
   imagePath: string;
 }
 
 export interface ImageGenProvider {
   generate(input: GenerateInput): Promise<GenerateOutput>;
+  generateInitial(input: GenerateInitialInput): Promise<GenerateOutput>;
 }

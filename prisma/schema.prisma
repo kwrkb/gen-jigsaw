@@ -22,8 +22,10 @@ model Room {
   id          String   @id
   name        String
   ownerUserId String
-  stylePreset String?
-  createdAt   DateTime @default(now())
+  stylePreset       String?
+  initialPrompt     String?
+  initialTileStatus String   @default("PENDING")
+  createdAt         DateTime @default(now())
 
   owner      User        @relation("RoomOwner", fields: [ownerUserId], references: [id])
   tiles      Tile[]

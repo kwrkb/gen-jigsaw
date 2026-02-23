@@ -1,5 +1,6 @@
 export type Direction = "N" | "E" | "S" | "W";
 export type ExpansionStatus = "QUEUED" | "RUNNING" | "DONE" | "FAILED" | "REJECTED" | "ADOPTED";
+export type InitialTileStatus = "PENDING" | "GENERATING" | "DONE" | "FAILED";
 
 export interface User {
   id: string;
@@ -12,6 +13,8 @@ export interface Room {
   name: string;
   ownerUserId: string;
   stylePreset?: string | null;
+  initialPrompt?: string | null;
+  initialTileStatus: InitialTileStatus;
   createdAt: string;
 }
 

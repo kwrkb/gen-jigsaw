@@ -101,6 +101,23 @@ export default function RoomPage({ params }: RoomPageProps) {
     }
   }
 
+  async function handleRetryInitial() {
+    try {
+      const res = await fetch(`/api/rooms/${roomId}/generate-initial`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        addToast(data.error ?? "リトライに失敗しました", "error");
+        return;
+      }
+      addToast("初期画像を再生成しています...", "info");
+      refetch();
+    } catch {
+      addToast("ネットワークエラー", "error");
+    }
+  }
+
   async function handleReject(expansion: Expansion) {
     try {
       const res = await fetch(`/api/expansions/${expansion.id}/reject`, {
@@ -173,6 +190,7 @@ export default function RoomPage({ params }: RoomPageProps) {
           onExpand={handleExpand}
           onAdopt={handleAdopt}
           onReject={handleReject}
+          onRetryInitial={handleRetryInitial}
         />
 
         {/* サイドパネル */}

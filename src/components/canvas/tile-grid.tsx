@@ -1,19 +1,20 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
-import type { RoomDetail, Tile, Expansion, Lock } from "@/types";
+import type { RoomDetail, Tile, Expansion, Lock, InitialTileStatus } from "@/types";
 import { TileCell } from "./tile-cell";
 
 const CELL_SIZE = 256;
 const PADDING = 1; // グリッドの外側に追加するパディング（セル数）
 
 interface TileGridProps {
-  room: RoomDetail;
+  room: RoomDetail & { initialTileStatus: InitialTileStatus; initialPrompt?: string | null };
   userId: string;
   isOwner: boolean;
   onExpand: (x: number, y: number, fromTile: Tile) => void;
   onAdopt: (expansion: Expansion) => void;
   onReject: (expansion: Expansion) => void;
+  onRetryInitial?: () => void;
 }
 
 interface GridBounds {
@@ -72,6 +73,7 @@ export function TileGrid({
   onExpand,
   onAdopt,
   onReject,
+  onRetryInitial,
 }: TileGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -182,6 +184,11 @@ export function TileGrid({
             const lock = lockMap.get(key);
             const expansion = expansionMap.get(key);
             const adjacentTile = !tile ? getAdjacentTile(x, y, tileMap) : undefined;
+            const isOriginTile = x === 0 && y === 0;
+            const isGeneratingInitial = isOriginTile && room.initialTileStatus === "GENERATING";
+            const isFailedInitial = isOriginTile && room.initialTileStatus === "FAILED";
+            // 初期タイル生成が完了していない間は隣接セルの "+" を抑制
+            const suppressExpand = room.initialPrompt && room.initialTileStatus !== "DONE";
 
             return (
               <TileCell
@@ -191,13 +198,16 @@ export function TileGrid({
                 tile={tile}
                 lock={lock}
                 expansion={expansion}
-                isExpansionTarget={!!adjacentTile}
+                isExpansionTarget={!suppressExpand && !!adjacentTile}
                 userId={userId}
                 isOwner={isOwner}
                 onExpand={onExpand}
                 onAdopt={onAdopt}
                 onReject={onReject}
                 adjacentTile={adjacentTile}
+                isGeneratingInitial={isGeneratingInitial}
+                isFailedInitial={isFailedInitial}
+                onRetryInitial={isFailedInitial ? onRetryInitial : undefined}
               />
             );
           })
