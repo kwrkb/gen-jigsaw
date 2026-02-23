@@ -1,6 +1,7 @@
-import { mkdirSync, readFileSync, writeFileSync } from "fs";
+import { readFileSync } from "fs";
 import { join } from "path";
 import { createId } from "@paralleldrive/cuid2";
+import { getStorageProvider } from "@/lib/storage";
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
 import sharp from "sharp";
@@ -80,7 +81,7 @@ export class DallE2ImageGenProvider implements ImageGenProvider {
 
   async generate(input: GenerateInput): Promise<GenerateOutput> {
     const referenceImageBuffer = await loadReferenceImage(input.referenceImageUrl);
-    const size = input.size <= 256 ? 256 : 512;
+    const size: 256 | 512 = input.size <= 256 ? 256 : 512;
 
     const referenceBuffer = await sharp(referenceImageBuffer)
       .resize(size, size, { fit: "cover" })
@@ -110,9 +111,9 @@ export class DallE2ImageGenProvider implements ImageGenProvider {
           mask: await toFile(maskBuffer, "mask.png", { type: "image/png" }),
           prompt,
           n: 1,
-          size: `${size}x${size}`,
+          size: `${size}x${size}` as "256x256" | "512x512",
         });
-        imageUrl = edited.data[0]?.url;
+        imageUrl = edited.data?.[0]?.url;
         if (!imageUrl) {
           throw new Error("DALL-E response did not contain an image URL");
         }
@@ -141,12 +142,10 @@ export class DallE2ImageGenProvider implements ImageGenProvider {
 
     const arrayBuffer = await response.arrayBuffer();
     const filename = `${createId()}.png`;
-    const generatedDir = join(process.cwd(), "public", "generated");
-    const destination = join(generatedDir, filename);
 
-    mkdirSync(generatedDir, { recursive: true });
-    writeFileSync(destination, Buffer.from(arrayBuffer));
+    const storage = getStorageProvider();
+    const imagePath = await storage.upload(Buffer.from(arrayBuffer), filename);
 
-    return { imagePath: `/generated/${filename}` };
+    return { imagePath };
   }
 }
