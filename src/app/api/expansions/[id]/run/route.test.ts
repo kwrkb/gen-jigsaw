@@ -1,49 +1,82 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const prismaMock = vi.hoisted(() => ({
-  expansion: {
-    findUnique: vi.fn(),
-    update: vi.fn(),
-  },
-  tile: {
-    findUnique: vi.fn(),
-  },
-  lock: {
-    deleteMany: vi.fn(),
-  },
-  $transaction: vi.fn(),
-}));
+type FnMock = ReturnType<typeof vi.fn>;
 
-const generateMock = vi.hoisted(() => vi.fn());
-const emitRoomEventMock = vi.hoisted(() => vi.fn());
-const getUserIdFromSessionMock = vi.hoisted(() => vi.fn());
+type PrismaMock = {
+  expansion: {
+    findUnique: FnMock;
+    update: FnMock;
+  };
+  tile: {
+    findUnique: FnMock;
+  };
+  lock: {
+    deleteMany: FnMock;
+  };
+  $transaction: FnMock;
+};
 
 vi.mock("@/lib/prisma", () => ({
-  prisma: prismaMock,
+  prisma: {
+    expansion: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+    tile: {
+      findUnique: vi.fn(),
+    },
+    lock: {
+      deleteMany: vi.fn(),
+    },
+    $transaction: vi.fn(),
+  },
 }));
 
 vi.mock("@/lib/image-gen", () => ({
-  getImageGenProvider: () => ({
-    generate: generateMock,
-  }),
+  getImageGenProvider: vi.fn(),
 }));
 
 vi.mock("@/lib/sse-emitter", () => ({
-  emitRoomEvent: emitRoomEventMock,
+  emitRoomEvent: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({
-  getUserIdFromSession: getUserIdFromSessionMock,
+  getUserIdFromSession: vi.fn(),
 }));
 
+async function getMocks() {
+  const [prismaModule, imageGenModule, sseModule, authModule] = await Promise.all([
+    import("@/lib/prisma"),
+    import("@/lib/image-gen"),
+    import("@/lib/sse-emitter"),
+    import("@/lib/auth"),
+  ]);
+
+  return {
+    prismaMock: prismaModule.prisma as unknown as PrismaMock,
+    getImageGenProviderMock: vi.mocked(imageGenModule.getImageGenProvider) as unknown as FnMock,
+    emitRoomEventMock: vi.mocked(sseModule.emitRoomEvent) as unknown as FnMock,
+    getUserIdFromSessionMock: vi.mocked(authModule.getUserIdFromSession) as unknown as FnMock,
+  };
+}
+
 describe("POST /api/expansions/:id/run", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetModules();
     vi.clearAllMocks();
+    const { getUserIdFromSessionMock } = await getMocks();
     getUserIdFromSessionMock.mockResolvedValue("user-1");
   });
 
   it("updates expansion to DONE on successful image generation", async () => {
+    const { prismaMock, getImageGenProviderMock, emitRoomEventMock } = await getMocks();
+
+    const generateMock = vi.fn().mockResolvedValue({ imagePath: "/generated/new.png" });
+    getImageGenProviderMock.mockReturnValue({
+      generate: generateMock,
+    });
+
     prismaMock.expansion.findUnique.mockResolvedValue({
       id: "exp-1",
       roomId: "room-1",
@@ -65,7 +98,6 @@ describe("POST /api/expansions/:id/run", () => {
         status: "DONE",
         resultImageUrl: "/generated/new.png",
       });
-    generateMock.mockResolvedValue({ imagePath: "/generated/new.png" });
 
     const { POST } = await import("./route");
     const req = new NextRequest("http://localhost/api/expansions/exp-1/run", {
@@ -84,6 +116,13 @@ describe("POST /api/expansions/:id/run", () => {
   });
 
   it("marks expansion as FAILED and releases lock on provider error", async () => {
+    const { prismaMock, getImageGenProviderMock } = await getMocks();
+
+    const generateMock = vi.fn().mockRejectedValue(new Error("OpenAI down"));
+    getImageGenProviderMock.mockReturnValue({
+      generate: generateMock,
+    });
+
     prismaMock.expansion.findUnique.mockResolvedValue({
       id: "exp-1",
       roomId: "room-1",
@@ -101,7 +140,6 @@ describe("POST /api/expansions/:id/run", () => {
     prismaMock.expansion.update.mockResolvedValue({ id: "exp-1", status: "RUNNING" });
     prismaMock.lock.deleteMany.mockResolvedValue({ count: 1 });
     prismaMock.$transaction.mockResolvedValue([]);
-    generateMock.mockRejectedValue(new Error("OpenAI down"));
 
     const { POST } = await import("./route");
     const req = new NextRequest("http://localhost/api/expansions/exp-1/run", {
@@ -119,6 +157,7 @@ describe("POST /api/expansions/:id/run", () => {
   });
 
   it("returns 401 when no authenticated session exists", async () => {
+    const { getUserIdFromSessionMock } = await getMocks();
     getUserIdFromSessionMock.mockResolvedValue(null);
 
     const { POST } = await import("./route");
