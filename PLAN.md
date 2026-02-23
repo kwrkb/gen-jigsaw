@@ -21,6 +21,7 @@
 - [completed] PR #2 を main へマージ
 - [completed] Issue #8: referenceImageUrl 外部 URL 対応（loadReferenceImage() に置換）
 - [completed] Issue #3 + #4: ストレージ抽象化 + SSE アーキテクチャ文書化（PR #10）
+- [completed] PR #18 作成（feature/phase3-canvas-refinement → main）
 
 ### Steps（UI/UX デザインリニューアル）
 - [completed] Phase 1: デザイン基盤構築（依存追加なし）
