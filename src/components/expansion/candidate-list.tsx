@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Image from "next/image";
 import type { Expansion } from "@/types";
 
@@ -19,7 +20,7 @@ const STATUS_LABELS: Record<string, string> = {
   ADOPTED: "採用済",
 };
 
-export function CandidateList({
+export const CandidateList = memo(function CandidateList({
   expansions,
   isOwner,
   onAdopt,
@@ -121,4 +122,4 @@ export function CandidateList({
       )}
     </div>
   );
-}
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect, useMemo } from "react";
+import { useRef, useState, useCallback, useEffect, useMemo, memo } from "react";
 import type { RoomDetail, Tile, Expansion, Lock, InitialTileStatus } from "@/types";
 import { TileCell } from "./tile-cell";
 
@@ -66,7 +66,7 @@ function getAdjacentTile(
   return undefined;
 }
 
-export function TileGrid({
+export const TileGrid = memo(function TileGrid({
   room,
   userId,
   isOwner,
@@ -352,4 +352,4 @@ export function TileGrid({
       </div>
     </div>
   );
-}
+});
