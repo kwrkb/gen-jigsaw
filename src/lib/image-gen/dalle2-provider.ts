@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "fs";
+import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { createId } from "@paralleldrive/cuid2";
 import OpenAI from "openai";
@@ -24,11 +24,14 @@ async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function resolveReferencePath(referenceImageUrl: string): string {
-  const trimmed = referenceImageUrl.startsWith("/")
-    ? referenceImageUrl.slice(1)
-    : referenceImageUrl;
-  return join(process.cwd(), "public", trimmed);
+async function loadReferenceImage(imageUrl: string): Promise<Buffer> {
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    const res = await fetch(imageUrl);
+    if (!res.ok) throw new Error(`Failed to fetch reference image: ${res.status}`);
+    return Buffer.from(await res.arrayBuffer());
+  }
+  const trimmed = imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl;
+  return readFileSync(join(process.cwd(), "public", trimmed));
 }
 
 function createMaskBuffer(size: number, direction: Direction): Buffer {
@@ -76,10 +79,10 @@ export class DallE2ImageGenProvider implements ImageGenProvider {
   }
 
   async generate(input: GenerateInput): Promise<GenerateOutput> {
-    const referenceImagePath = resolveReferencePath(input.referenceImageUrl);
+    const referenceImageBuffer = await loadReferenceImage(input.referenceImageUrl);
     const size = input.size <= 256 ? 256 : 512;
 
-    const referenceBuffer = await sharp(referenceImagePath)
+    const referenceBuffer = await sharp(referenceImageBuffer)
       .resize(size, size, { fit: "cover" })
       .ensureAlpha()
       .png()
