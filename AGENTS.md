@@ -25,10 +25,10 @@
 - Prefer `@/*` path alias imports over deep relative paths.
 
 ## Testing Guidelines
-- No dedicated test framework is configured yet.
+- Use Vitest for unit and integration tests. Run tests with `npm run test`.
 - Before opening a PR, run `npx tsc --noEmit` and `npm run build`.
 - Validate core flows manually: user setup, room creation, expansion run/adopt/reject, and lock behavior.
-- If adding tests, colocate near source as `*.test.ts` / `*.test.tsx` and document the run command in your PR.
+- Colocate tests near source as `*.test.ts` / `*.test.tsx`.
 
 ## Commit & Pull Request Guidelines
 - Follow concise, imperative commit messages; `fix: ...` style (Conventional Commit prefix) is preferred.

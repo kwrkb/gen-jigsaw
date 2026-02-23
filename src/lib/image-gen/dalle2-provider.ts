@@ -40,10 +40,12 @@ function createMaskBuffer(size: number, direction: Direction): Buffer {
       const offset = (y * size + x) * channels;
       let shouldEdit = false;
 
-      if (direction === "E") shouldEdit = x >= size / 2;
-      if (direction === "W") shouldEdit = x < size / 2;
-      if (direction === "S") shouldEdit = y >= size / 2;
-      if (direction === "N") shouldEdit = y < size / 2;
+      // 透明部分（AIが生成する）は新タイルと接しない辺側。
+      // 保持部分（不透明）は元タイルの境界辺側として残し、AIの継ぎ目生成に利用する。
+      if (direction === "E") shouldEdit = x < size / 2;
+      if (direction === "W") shouldEdit = x >= size / 2;
+      if (direction === "S") shouldEdit = y < size / 2;
+      if (direction === "N") shouldEdit = y >= size / 2;
 
       if (shouldEdit) {
         data[offset] = 0;
@@ -66,9 +68,11 @@ export class DallE2ImageGenProvider implements ImageGenProvider {
   private client: OpenAI;
 
   constructor() {
-    this.client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error("OPENAI_API_KEY environment variable is not set");
+    }
+    this.client = new OpenAI({ apiKey });
   }
 
   async generate(input: GenerateInput): Promise<GenerateOutput> {

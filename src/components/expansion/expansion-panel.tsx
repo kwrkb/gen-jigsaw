@@ -68,14 +68,14 @@ export function ExpansionPanel({
       const expRes = await fetch(`/api/rooms/${roomId}/expansions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fromTileId: fromTile.id,
-            targetX,
-            targetY,
-            direction,
-            promptJson: { text: promptText.trim() },
-          }),
-        });
+        body: JSON.stringify({
+          fromTileId: fromTile.id,
+          targetX,
+          targetY,
+          direction,
+          promptJson: { text: promptText.trim() },
+        }),
+      });
 
       if (!expRes.ok) {
         const data = await expRes.json().catch(() => ({}));

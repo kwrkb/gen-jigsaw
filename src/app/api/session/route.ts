@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function DELETE() {
-  const response = NextResponse.json(null, { status: 204 });
+  const response = new NextResponse(null, { status: 204 });
   destroySession(response);
   return response;
 }

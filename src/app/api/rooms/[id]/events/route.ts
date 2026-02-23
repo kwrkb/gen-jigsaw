@@ -33,7 +33,11 @@ export async function GET(
       const onAbort = () => {
         clearInterval(keepAlive);
         unsubscribe();
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          // already closed
+        }
       };
 
       req.signal.addEventListener("abort", onAbort, { once: true });

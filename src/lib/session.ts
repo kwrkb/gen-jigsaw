@@ -9,20 +9,20 @@ export interface SessionUser {
   displayName: string;
 }
 
-function getSessionSecret(): string {
+const SESSION_SECRET = (() => {
   const secret = process.env.SESSION_SECRET;
   if (!secret || secret.length < 32) {
     throw new Error("SESSION_SECRET must be set and at least 32 characters long");
   }
   return secret;
-}
+})();
 
 export async function getSession(req: NextRequest): Promise<SessionUser | null> {
   const sealed = req.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (!sealed) return null;
 
   try {
-    return await unsealData<SessionUser>(sealed, { password: getSessionSecret() });
+    return await unsealData<SessionUser>(sealed, { password: SESSION_SECRET });
   } catch {
     return null;
   }
@@ -30,7 +30,7 @@ export async function getSession(req: NextRequest): Promise<SessionUser | null> 
 
 export async function setSession(res: NextResponse, user: SessionUser) {
   const sealed = await sealData(user, {
-    password: getSessionSecret(),
+    password: SESSION_SECRET,
     ttl: SESSION_TTL_SECONDS,
   });
 
