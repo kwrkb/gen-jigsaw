@@ -1,6 +1,7 @@
-import { copyFileSync } from "fs";
+import { readFileSync } from "fs";
 import { join } from "path";
 import { createId } from "@paralleldrive/cuid2";
+import { getStorageProvider } from "@/lib/storage";
 import type { ImageGenProvider, GenerateInput, GenerateOutput } from "./provider";
 
 export class MockImageGenProvider implements ImageGenProvider {
@@ -12,10 +13,11 @@ export class MockImageGenProvider implements ImageGenProvider {
 
     const filename = `${createId()}.png`;
     const srcPath = join(process.cwd(), "public", "placeholder.png");
-    const destPath = join(process.cwd(), "public", "generated", filename);
+    const buffer = readFileSync(srcPath);
 
-    copyFileSync(srcPath, destPath);
+    const storage = getStorageProvider();
+    const imagePath = await storage.upload(buffer, filename);
 
-    return { imagePath: `/generated/${filename}` };
+    return { imagePath };
   }
 }
