@@ -20,19 +20,20 @@
 - [completed] PR #2 レビュー指摘（Codex P1 × 2・kwrkb Critical/High/Medium・Gemini High/Medium）の修正
 - [completed] PR #2 を main へマージ
 - [completed] Issue #8: referenceImageUrl 外部 URL 対応（loadReferenceImage() に置換）
+- [completed] Issue #3 + #4: ストレージ抽象化 + SSE アーキテクチャ文書化（PR #10）
 
 ### Notes
 - 依存追加（`npm install`）は `getaddrinfo EAI_AGAIN registry.npmjs.org` により開発環境でのローカル実行は未完了。
 - コードと `package.json` は PR にコミット済み。CI 環境（GitHub Actions）で `npm install` が実行される。
 - `npx tsc --noEmit` / `npm run build` / `npm test` のローカル実行は CI に委譲。
-- **要対応 Issues**: #3（SSE スケール）、#4（画像ストレージ）が優先度高。Issue #5/#6/#7/#8 は修正済み。
+- **要対応 Issues**: ~~#3（SSE スケール）~~、~~#4（画像ストレージ）~~ → PR #10 で対応済み。Issue #5/#6/#7/#8 は修正済み。
 - **注意**: Codex CLI 使用時は PLAN.md を上書きする場合があるため、実行後に復元・更新すること。
 
 ## 現状の把握（2026-02-23 更新）
 
 - **基本機能**: ルーム作成、タイルの拡張、採用/却下、ロック機構は実装済み。
-- **画像生成**: `DallE2ImageGenProvider` を実装済み（`src/lib/image-gen/dalle2-provider.ts`）。`IMAGE_GEN_PROVIDER=dalle2` + `OPENAI_API_KEY` 設定で本番動作可能。`OPENAI_API_KEY` 未設定時はコンストラクタで早期エラー。マスク方向修正済み（境界辺を保持側に）。`referenceImageUrl` の外部 URL 対応済み（Issue #8 解決）。現状はローカル `public/generated/` に保存（Issue #4）。
-- **リアルタイム性**: SSE エンドポイント (`/api/rooms/[id]/events`) 実装済み。`setMaxListeners(0)` 設定済み。`controller.close()` try-catch 保護済み。ただし単一プロセス前提（Issue #3）。
+- **画像生成**: `DallE2ImageGenProvider` を実装済み（`src/lib/image-gen/dalle2-provider.ts`）。`IMAGE_GEN_PROVIDER=dalle2` + `OPENAI_API_KEY` 設定で本番動作可能。`OPENAI_API_KEY` 未設定時はコンストラクタで早期エラー。マスク方向修正済み（境界辺を保持側に）。`referenceImageUrl` の外部 URL 対応済み（Issue #8 解決）。**画像保存は `StorageProvider` 抽象化済み**（`STORAGE_PROVIDER` 環境変数で切り替え可能、デフォルト `local`）。S3/R2 プロバイダは未実装だがインターフェース準備済み（Issue #4 対応済み）。
+- **リアルタイム性**: SSE エンドポイント (`/api/rooms/[id]/events`) 実装済み。`setMaxListeners(0)` 設定済み。`controller.close()` try-catch 保護済み。単一プロセス前提だがアーキテクチャ制約と移行パス（Redis Pub/Sub）を文書化済み（Issue #3 対応済み）。
 - **認証**: `iron-session` による暗号化 Cookie セッション実装済み。`SESSION_SECRET` 検証をモジュールトップレベルで実施。`DELETE /api/session` は bodyless 204 レスポンスに修正済み。
 - **FAILED 時ロック解放**: `run/route.ts` のトランザクション処理済み（実装完了）。
 - **テスト**: `vitest.config.ts` 設定済み。`lock-service.test.ts`（4ケース）・`run/route.test.ts`（3ケース）作成済み。
@@ -76,7 +77,8 @@
 - [x] リトライロジックの実装（指数バックオフ、最大3回、429/5xx のみ対象）
 - [x] `src/lib/image-gen/index.ts` に `IMAGE_GEN_PROVIDER=dalle2` のケースを追加
 - [x] `.env.example` に `OPENAI_API_KEY`, `IMAGE_GEN_PROVIDER=dalle2` を追記
-- [ ] 生成済み画像の保存先を `/public/generated/` から Cloudflare R2 / AWS S3 等へ移行（Issue #4 で追跡）
+- [x] 生成済み画像の保存先を `StorageProvider` インターフェースに抽象化（Issue #4）
+  > `src/lib/storage/` に `StorageProvider` / `LocalStorageProvider` を導入。`STORAGE_PROVIDER` 環境変数で切り替え可能。S3/R2 プロバイダは拡張ポイントとして準備済み。
 
 #### 実装済み（対応不要）
 
@@ -93,7 +95,7 @@
 - [x] SSE エミッター (`src/lib/sse-emitter.ts`) の実装
   - `EventEmitter` ベースの in-process pub/sub
   - `emit(roomId: string, event: string)` でルーム単位にイベント発火
-  > Issue #3: 単一プロセス前提。`setMaxListeners(0)` 設定済み。スケール時は Redis Pub/Sub 等へ要移行。
+  > Issue #3: 単一プロセス前提。`setMaxListeners(0)` 設定済み。アーキテクチャ制約と移行パス（Redis Pub/Sub）を文書化済み。ポーリング（useRoom 3s）がフォールバックとして機能。
 - [x] SSE エンドポイントの実装 (`src/app/api/rooms/[id]/events/route.ts`)
   - Next.js App Router の `ReadableStream` + 生 `Response` パターンを使用
   - `request.signal` の `abort` イベントでクリーンアップ（接続切断時のリスナー除去）
