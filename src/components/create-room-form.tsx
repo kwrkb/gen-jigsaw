@@ -35,16 +35,10 @@ export function CreateRoomForm({ onCreated, onError }: CreateRoomFormProps) {
       }
       const room = await res.json();
 
-      // Fire-and-forget: 初期画像生成を開始
-      fetch(`/api/rooms/${room.id}/generate-initial`, {
-        method: "POST",
-      }).catch(() => {
-        // エラーはルーム内でリトライ可能
-      });
-
       setName("");
       setPromptText("");
       setOpen(false);
+      // ルームページへ遷移後、PENDING検知で生成が自動開始される
       onCreated(room.id);
     } catch {
       onError("ルーム作成に失敗しました");

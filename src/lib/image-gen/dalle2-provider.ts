@@ -63,9 +63,18 @@ function createMaskBuffer(size: number, direction: Direction): Buffer {
   return data;
 }
 
-function buildPrompt(input: GenerateInput): string {
-  const style = input.prompt.style ? ` (${input.prompt.style} style)` : "";
-  return `${input.prompt.text}${style}`;
+/** ユーザー入力のサニタイズ: 制御文字除去 + 長さ制限 */
+function sanitizePromptText(text: string, maxLen = 400): string {
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/[\x00-\x1f\x7f]/g, " ").trim().slice(0, maxLen);
+}
+
+function buildPrompt(input: { prompt: { text: string; style?: string } }): string {
+  const text = sanitizePromptText(input.prompt.text);
+  const style = input.prompt.style
+    ? ` (${sanitizePromptText(input.prompt.style, 100)} style)`
+    : "";
+  return `${text}${style}`;
 }
 
 export class DallE2ImageGenProvider implements ImageGenProvider {
@@ -77,6 +86,51 @@ export class DallE2ImageGenProvider implements ImageGenProvider {
       throw new Error("OPENAI_API_KEY environment variable is not set");
     }
     this.client = new OpenAI({ apiKey });
+  }
+
+  /** API呼び出しをリトライ付きで実行し、結果画像をダウンロード+アップロード */
+  private async executeWithRetry(
+    apiCall: () => Promise<string | undefined>
+  ): Promise<GenerateOutput> {
+    let imageUrl: string | undefined;
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        imageUrl = await apiCall();
+        if (!imageUrl) {
+          throw new Error("DALL-E response did not contain an image URL");
+        }
+        break;
+      } catch (error) {
+        lastError = error;
+        const status = getRetryStatus(error);
+        if (attempt === MAX_RETRIES - 1 || !isRetryableStatus(status)) {
+          throw error;
+        }
+        const backoff = BASE_BACKOFF_MS * 2 ** attempt;
+        await sleep(backoff);
+      }
+    }
+
+    if (!imageUrl) {
+      throw lastError instanceof Error
+        ? lastError
+        : new Error("Failed to generate image");
+    }
+
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download generated image: ${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const filename = `${createId()}.png`;
+
+    const storage = getStorageProvider();
+    const imagePath = await storage.upload(Buffer.from(arrayBuffer), filename);
+
+    return { imagePath };
   }
 
   async generate(input: GenerateInput): Promise<GenerateOutput> {
@@ -98,106 +152,33 @@ export class DallE2ImageGenProvider implements ImageGenProvider {
 
     const prompt = buildPrompt(input);
 
-    let imageUrl: string | undefined;
-    let lastError: unknown;
-
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      try {
-        const edited = await this.client.images.edit({
-          model: "dall-e-2",
-          image: await toFile(referenceBuffer, "reference.png", {
-            type: "image/png",
-          }),
-          mask: await toFile(maskBuffer, "mask.png", { type: "image/png" }),
-          prompt,
-          n: 1,
-          size: `${size}x${size}` as "256x256" | "512x512",
-        });
-        imageUrl = edited.data?.[0]?.url;
-        if (!imageUrl) {
-          throw new Error("DALL-E response did not contain an image URL");
-        }
-        break;
-      } catch (error) {
-        lastError = error;
-        const status = getRetryStatus(error);
-        if (attempt === MAX_RETRIES - 1 || !isRetryableStatus(status)) {
-          throw error;
-        }
-        const backoff = BASE_BACKOFF_MS * 2 ** attempt;
-        await sleep(backoff);
-      }
-    }
-
-    if (!imageUrl) {
-      throw lastError instanceof Error
-        ? lastError
-        : new Error("Failed to generate image");
-    }
-
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to download generated image: ${response.status}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const filename = `${createId()}.png`;
-
-    const storage = getStorageProvider();
-    const imagePath = await storage.upload(Buffer.from(arrayBuffer), filename);
-
-    return { imagePath };
+    return this.executeWithRetry(async () => {
+      const edited = await this.client.images.edit({
+        model: "dall-e-2",
+        image: await toFile(referenceBuffer, "reference.png", {
+          type: "image/png",
+        }),
+        mask: await toFile(maskBuffer, "mask.png", { type: "image/png" }),
+        prompt,
+        n: 1,
+        size: `${size}x${size}` as "256x256" | "512x512",
+      });
+      return edited.data?.[0]?.url;
+    });
   }
 
   async generateInitial(input: GenerateInitialInput): Promise<GenerateOutput> {
     const size: 256 | 512 = input.size <= 256 ? 256 : 512;
-    const style = input.prompt.style ? ` (${input.prompt.style} style)` : "";
-    const prompt = `${input.prompt.text}${style}`;
+    const prompt = buildPrompt(input);
 
-    let imageUrl: string | undefined;
-    let lastError: unknown;
-
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      try {
-        const result = await this.client.images.generate({
-          model: "dall-e-2",
-          prompt,
-          n: 1,
-          size: `${size}x${size}` as "256x256" | "512x512",
-        });
-        imageUrl = result.data?.[0]?.url;
-        if (!imageUrl) {
-          throw new Error("DALL-E response did not contain an image URL");
-        }
-        break;
-      } catch (error) {
-        lastError = error;
-        const status = getRetryStatus(error);
-        if (attempt === MAX_RETRIES - 1 || !isRetryableStatus(status)) {
-          throw error;
-        }
-        const backoff = BASE_BACKOFF_MS * 2 ** attempt;
-        await sleep(backoff);
-      }
-    }
-
-    if (!imageUrl) {
-      throw lastError instanceof Error
-        ? lastError
-        : new Error("Failed to generate image");
-    }
-
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to download generated image: ${response.status}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const filename = `${createId()}.png`;
-
-    const storage = getStorageProvider();
-    const imagePath = await storage.upload(Buffer.from(arrayBuffer), filename);
-
-    return { imagePath };
+    return this.executeWithRetry(async () => {
+      const result = await this.client.images.generate({
+        model: "dall-e-2",
+        prompt,
+        n: 1,
+        size: `${size}x${size}` as "256x256" | "512x512",
+      });
+      return result.data?.[0]?.url;
+    });
   }
 }
