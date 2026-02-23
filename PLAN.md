@@ -12,17 +12,32 @@
 - [completed] フェーズ4: Vitest/CI の最小導入（可能な範囲）
 - [completed] 最終検証（type-check/build）と `PLAN.md` 最終更新
 
+### Steps（追加）
+- [completed] PR #2 作成（feature/mvp-enhancements → main）
+- [completed] Gemini + Claude コードレビュー実施（5軸監査）
+- [completed] PR インラインコメント 6件追加
+- [completed] GitHub Issues #3〜#9 作成（Medium 以上の findings）
+- [completed] PR #2 レビュー指摘（Codex P1 × 2・kwrkb Critical/High/Medium・Gemini High/Medium）の修正
+- [completed] PR #2 を main へマージ
+- [completed] Issue #8: referenceImageUrl 外部 URL 対応（loadReferenceImage() に置換）
+
 ### Notes
-- 依存追加（`npm install`）は `getaddrinfo EAI_AGAIN registry.npmjs.org` により未完了。
-- そのため `npx tsc --noEmit` は新規依存未導入エラーで停止し、`npm run build` / `npm test` は未実行。
+- 依存追加（`npm install`）は `getaddrinfo EAI_AGAIN registry.npmjs.org` により開発環境でのローカル実行は未完了。
+- コードと `package.json` は PR にコミット済み。CI 環境（GitHub Actions）で `npm install` が実行される。
+- `npx tsc --noEmit` / `npm run build` / `npm test` のローカル実行は CI に委譲。
+- **要対応 Issues**: #3（SSE スケール）、#4（画像ストレージ）が優先度高。Issue #5/#6/#7/#8 は修正済み。
+- **注意**: Codex CLI 使用時は PLAN.md を上書きする場合があるため、実行後に復元・更新すること。
 
-## 現状の把握
+## 現状の把握（2026-02-23 更新）
 
-- **基本機能**: ルーム作成、タイルの拡張（モック生成）、採用/却下、ロック機構は実装済み。
-- **画像生成**: `MockImageGenProvider` が `placeholder.png` をコピーするのみ。
-- **リアルタイム性**: `useRoom` フックは SSE 優先（`ready`/`room_update`/`error` イベント）＋ポーリングフォールバック実装済み。バックエンドの SSE エンドポイント (`/api/rooms/[id]/events`) は未実装。
-- **認証**: `use-user.ts` は `GET /api/session` でセッション読み込み、`DELETE /api/session` でログアウト、`POST /api/users` でユーザー作成を行う設計。ただしサーバー側 `/api/session` ルートは未実装（404）。`localStorage` は未使用。
-- **FAILED 時ロック解放**: `src/app/api/expansions/[id]/run/route.ts:59-71` でトランザクション処理済み（実装完了）。
+- **基本機能**: ルーム作成、タイルの拡張、採用/却下、ロック機構は実装済み。
+- **画像生成**: `DallE2ImageGenProvider` を実装済み（`src/lib/image-gen/dalle2-provider.ts`）。`IMAGE_GEN_PROVIDER=dalle2` + `OPENAI_API_KEY` 設定で本番動作可能。`OPENAI_API_KEY` 未設定時はコンストラクタで早期エラー。マスク方向修正済み（境界辺を保持側に）。`referenceImageUrl` の外部 URL 対応済み（Issue #8 解決）。現状はローカル `public/generated/` に保存（Issue #4）。
+- **リアルタイム性**: SSE エンドポイント (`/api/rooms/[id]/events`) 実装済み。`setMaxListeners(0)` 設定済み。`controller.close()` try-catch 保護済み。ただし単一プロセス前提（Issue #3）。
+- **認証**: `iron-session` による暗号化 Cookie セッション実装済み。`SESSION_SECRET` 検証をモジュールトップレベルで実施。`DELETE /api/session` は bodyless 204 レスポンスに修正済み。
+- **FAILED 時ロック解放**: `run/route.ts` のトランザクション処理済み（実装完了）。
+- **テスト**: `vitest.config.ts` 設定済み。`lock-service.test.ts`（4ケース）・`run/route.test.ts`（3ケース）作成済み。
+- **CI**: `.github/workflows/ci.yml` に `SESSION_SECRET` / `DATABASE_URL` 環境変数を設定済み（Issue #5 解決）。
+- **コードレビュー**: Gemini 5軸監査 + Claude レビュー完了。`status/review.md` に記録。Issues #3〜#9 作成済み。レビュー指摘の修正を main へマージ済み。
 
 ## 妥当性チェック（2026-02-23）
 
@@ -43,50 +58,50 @@
 
 ## 実施フェーズ
 
-### フェーズ1: 画像生成基盤の本番対応（DALL-E 2）
+### フェーズ1: 画像生成基盤の本番対応（DALL-E 2）（完了）
 
 **採用プロバイダ:** OpenAI DALL-E 2 (`/v1/images/edits`) — outpainting に対応する唯一の低コスト選択肢。
 
 #### 実装ステップ
 
-- [ ] `openai` npm パッケージの追加
-- [ ] `sharp` npm パッケージの追加（マスク画像生成・RGBA変換に必須）
-- [ ] `DallE2ImageGenProvider` の実装 (`src/lib/image-gen/dalle2-provider.ts`)
-  - `referenceImageUrl`（例: `/generated/xxx.png`）をローカルパスへ変換:
-    `path.join(process.cwd(), 'public', referenceImageUrl)`
+- [x] `openai` npm パッケージの追加
+- [x] `sharp` npm パッケージの追加（マスク画像生成・RGBA変換に必須）
+- [x] `DallE2ImageGenProvider` の実装 (`src/lib/image-gen/dalle2-provider.ts`)
+  - `referenceImageUrl` の外部 URL（http/https）対応済み。`loadReferenceImage()` で fetch/readFileSync を分岐（Issue #8 解決）
   - 参照画像を PNG (RGBA) へ変換（`sharp` を使用）
-  - `direction`（`N`/`E`/`S`/`W`）に応じてアルファチャンネル付きマスク画像を生成
-    - 例: `E` → 参照画像の右半分をマスク（透過）、左半分を不透過
-    - 例: `S` → 参照画像の下半分をマスク（透過）、上半分を不透過
+  - `direction`（`N`/`E`/`S`/`W`）に応じてアルファチャンネル付きマスク画像を生成（境界辺を保持側に修正済み）
   - OpenAI `images.edit()` へ参照画像・マスク・プロンプトを渡す
-  - `size` は `256x256` または `512x512`（現行 `run/route.ts:45` で `256` ハードコード）
+  - `size` は `256x256` または `512x512`（`run/route.ts` で `256` ハードコード）
   - レスポンスの `url` をダウンロードして `/public/generated/{cuid}.png` に保存
-- [ ] リトライロジックの実装（指数バックオフ、最大3回、429/5xx のみ対象）
-- [ ] `src/lib/image-gen/index.ts` に `IMAGE_GEN_PROVIDER=dalle2` のケースを追加
-- [ ] `.env.example` に `OPENAI_API_KEY`, `IMAGE_GEN_PROVIDER=dalle2` を追記
-- [ ] 生成済み画像の保存先を `/public/generated/` から Cloudflare R2 / AWS S3 等へ移行（将来対応・オプション）
+- [x] リトライロジックの実装（指数バックオフ、最大3回、429/5xx のみ対象）
+- [x] `src/lib/image-gen/index.ts` に `IMAGE_GEN_PROVIDER=dalle2` のケースを追加
+- [x] `.env.example` に `OPENAI_API_KEY`, `IMAGE_GEN_PROVIDER=dalle2` を追記
+- [ ] 生成済み画像の保存先を `/public/generated/` から Cloudflare R2 / AWS S3 等へ移行（Issue #4 で追跡）
 
 #### 実装済み（対応不要）
 
-- ~~FAILED 時のロック解放~~: `run/route.ts:59-71` のトランザクション処理で実装済み
+- ~~FAILED 時のロック解放~~: `run/route.ts` のトランザクション処理で実装済み
 
 ---
 
-### フェーズ2: リアルタイム更新 (SSE) の導入
+### フェーズ2: リアルタイム更新 (SSE) の導入（完了）
 
 **クライアント側は変更不要**。`use-room.ts` の SSE 雛形は完成しており、`ready`/`room_update`/`error` イベントを処理する。
 
 #### サーバー側実装ステップ
 
-- [ ] SSE エミッター (`src/lib/sse-emitter.ts`) の実装
+- [x] SSE エミッター (`src/lib/sse-emitter.ts`) の実装
   - `EventEmitter` ベースの in-process pub/sub
   - `emit(roomId: string, event: string)` でルーム単位にイベント発火
-- [ ] SSE エンドポイントの実装 (`src/app/api/rooms/[id]/events/route.ts`)
+  > Issue #3: 単一プロセス前提。`setMaxListeners(0)` 設定済み。スケール時は Redis Pub/Sub 等へ要移行。
+- [x] SSE エンドポイントの実装 (`src/app/api/rooms/[id]/events/route.ts`)
   - Next.js App Router の `ReadableStream` + 生 `Response` パターンを使用
   - `request.signal` の `abort` イベントでクリーンアップ（接続切断時のリスナー除去）
   - 接続確立時に `ready` イベントを送信
   - `room_update` イベントを受信したらクライアントへ転送
-- [ ] 状態変更時のイベント発火（以下6ルートに `sse-emitter.emit()` を追加）
+  - 15秒ごとの keepalive ping 実装済み
+  > ~~Issue #6~~: `controller.close()` try-catch 保護済み（修正済み）。
+- [x] 状態変更時のイベント発火（以下6ルートに `sse-emitter.emit()` を追加）
   - `POST /api/rooms/:id/expansions` — Expansion 作成時
   - `POST /api/expansions/:id/run` — DONE/FAILED 更新時
   - `POST /api/expansions/:id/adopt` — Tile 追加時
@@ -96,27 +111,28 @@
 
 ---
 
-### フェーズ3: 認証・権限制御の強化（`iron-session`）
+### フェーズ3: 認証・権限制御の強化（`iron-session`）（完了）
 
 **`iron-session`（暗号化 Cookie セッション）を採用**。`use-user.ts` の既存構造（`GET /api/session`、`DELETE /api/session`、`POST /api/users`）をそのまま活用するため、**クライアント側の変更は不要**。
 
 #### 実装ステップ
 
-- [ ] `iron-session` npm パッケージの追加
-- [ ] `src/lib/session.ts` の実装
+- [x] `iron-session` npm パッケージの追加
+- [x] `src/lib/session.ts` の実装
   - `getSession(req)`: Cookie からセッション復号 → `{ userId, displayName }` を返す
   - `setSession(res, user)`: `Set-Cookie` ヘッダを付与
   - `destroySession(res)`: Cookie を無効化
   - `.env.example` に `SESSION_SECRET`（32文字以上のランダム文字列）を追記
-- [ ] `/api/session` ルートの実装
+  > ~~Issue #7~~: `SESSION_SECRET` 検証をモジュールトップレベルの IIFE へ移動済み（修正済み）。
+- [x] `/api/session` ルートの実装
   - `GET`: Cookie からセッション復号 → ユーザー情報を返す（未セッション時は 401）
   - `DELETE`: Cookie 破棄 → 204 を返す
-- [ ] `POST /api/users` の改修
+- [x] `POST /api/users` の改修
   - ユーザー作成後、レスポンスで `Set-Cookie`（`setSession` 呼び出し）を設定
-- [ ] `src/lib/auth.ts` の実装
+- [x] `src/lib/auth.ts` の実装
   - `getUserIdFromSession(req)`: Cookie セッションから `userId` を取得するヘルパー
-  - 各 API ルートで段階的に `body.userId` の参照を置換
-- [ ] `adopt`/`reject` のオーナーチェックをセッションベースに移行
+  - 全 API ルートの `body.userId` 参照を `getUserIdFromSession` に置換済み
+- [x] `adopt`/`reject` のオーナーチェックをセッションベースに移行
 
 #### 移行戦略
 
@@ -126,19 +142,23 @@
 
 ---
 
-### フェーズ4: 品質ゲートとテストの整備
+### フェーズ4: 品質ゲートとテストの整備（完了）
 
 **テストフレームワーク: Vitest**（ESM ネイティブ、Next.js 親和性が高い）
 
 #### 実装ステップ
 
-- [ ] `vitest` パッケージの追加と `vitest.config.ts` の設定
+- [x] `vitest` パッケージの追加と `vitest.config.ts` の設定
   - `@/*` パスエイリアスの解決設定（`tsconfig.json` の `paths` と合わせる）
-- [ ] `lock-service.ts` の単体テスト作成
-- [ ] Expansion ライフサイクル（`QUEUED → RUNNING → DONE`）の統合テスト作成
-- [ ] CI (GitHub Actions) 設定 (`.github/workflows/ci.yml`)
+- [x] `lock-service.ts` の単体テスト作成
+  - 4ケース: ロック取得・競合・ユニーク制約エラー・解放権限チェック
+  > Issue #9: `vi.hoisted` を多用した壊れやすいモック設計。モジュール isolation の改善を推奨。
+- [x] Expansion ライフサイクル（`QUEUED → RUNNING → DONE`）の統合テスト作成
+  - 3ケース: DONE 更新・FAILED + ロック解放・401 認証エラー
+- [x] CI (GitHub Actions) 設定 (`.github/workflows/ci.yml`)
   - `jdx/mise-action@v2` で Node.js 24 をセットアップ（`mise.toml` 対応）
-  - Lint (`eslint`)、Type-check (`npx tsc --noEmit`)、Test (`vitest`) を自動実行
+  - Type-check (`npx tsc --noEmit`)、Build、Test (`vitest`) を自動実行
+  > ~~Issue #5~~: `SESSION_SECRET` / `DATABASE_URL` を CI 環境変数に設定済み（修正済み）。
 
 ---
 
