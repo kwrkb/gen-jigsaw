@@ -66,13 +66,17 @@
   - [x] dalle2-provider: `executeWithRetry` にリトライ+DL+アップロードを共通化
 
 ### Steps（シームレスタイル接続）
-- [ ] 隣接タイルコンテキストによるシームレス画像生成
-  - [ ] `provider.ts`: `GenerateInput` に `adjacentImages` フィールド追加
-  - [ ] `run/route.ts`: ターゲットセルの上下左右タイルを DB から取得
-  - [ ] `dalle2-provider.ts`: 512x512 コンポジットキャンバス + エッジストリップ + クロップ
-  - [ ] `route.test.ts`: `tile.findMany` モック追加 + 隣接タイルテスト追加
+- [completed] 隣接タイルコンテキストによるシームレス画像生成 (PR #20)
+  - [x] `provider.ts`: `GenerateInput` に `adjacentImages` フィールド追加
+  - [x] `run/route.ts`: ターゲットセルの上下左右タイルを DB から取得
+  - [x] `dalle2-provider.ts`: 512x512 コンポジットキャンバス + エッジストリップ + クロップ
+  - [x] `route.test.ts`: `tile.findMany` モック追加 + adjacentImages マッピング簡素化
+
+### Steps（Stale Session 修正）
+- [ ] `auth.ts`: `getUserIdFromSession` に DB 存在チェック追加（FK 制約エラー P2003 修正）
 
 ### Notes
+- 2026-02-24: PR #20 マージ。シームレスタイル接続（コンポジットキャンバス方式）を実装。Stale session による FK 制約エラー (P2003) を発見、`auth.ts` の DB 存在チェック追加を次タスクとする。
 - 2026-02-23: UI/UX Phase 3 を完了。`tile-cell` にフレーム効果を追加し、拡張セルをパルス演出＋アイコン強化で再設計。`candidate-list` はタブ化（進行中/採用待ち/履歴）とステータスフィルタを実装。
 - 2026-02-23: `lucide-react` / `framer-motion` をインストールし、UI/UX Phase 2 を完了。主要コンポーネントのアイコンを Lucide に置換し、Framer Motion による滑らかなアニメーションを導入。
 - 2026-02-23: PR #17（missing hooks 復元 + path traversal 修正）をマージ後、PR #16 のレビュー指摘対応を実施。未定義CSS変数の追加、dark:ハードコード除去、日英混在テキストの日本語統一、AnimatePresence 統合、ホバーボーダー復元、スコープ外 GEMINI.md の除外。
