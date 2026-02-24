@@ -28,6 +28,13 @@ export interface Tile {
   createdAt: string;
 }
 
+export interface ExpansionVote {
+  id: string;
+  expansionId: string;
+  userId: string;
+  vote: "ADOPT" | "REJECT";
+}
+
 export interface Expansion {
   id: string;
   roomId: string;
@@ -40,6 +47,7 @@ export interface Expansion {
   resultImageUrl?: string | null;
   createdByUserId: string;
   createdAt: string;
+  votes?: ExpansionVote[];
 }
 
 export interface Lock {

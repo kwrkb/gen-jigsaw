@@ -242,23 +242,33 @@ export const CandidateList = memo(function CandidateList({
                 </div>
               </div>
 
-              {isOwner && exp.status === "DONE" && (
+              {exp.status === "DONE" && (
                 <div className="flex flex-col gap-1.5 flex-shrink-0">
                   <button
                     onClick={() => onAdopt(exp)}
-                    className="p-2 text-white shadow-sm transition-all hover:scale-110 active:scale-95"
+                    className="p-2 text-white shadow-sm transition-all hover:scale-110 active:scale-95 flex items-center gap-1"
                     style={{ background: "var(--color-success)", borderRadius: "var(--radius-lg)" }}
-                    aria-label={`候補(${exp.targetX}, ${exp.targetY})を採用`}
+                    aria-label={`候補(${exp.targetX}, ${exp.targetY})を採用に投票`}
                   >
                     <Check size={16} />
+                    {(exp.votes?.filter((v) => v.vote === "ADOPT").length ?? 0) > 0 && (
+                      <span className="text-[10px] font-bold">
+                        {exp.votes!.filter((v) => v.vote === "ADOPT").length}
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={() => onReject(exp)}
-                    className="p-2 text-white shadow-sm transition-all hover:scale-110 active:scale-95"
+                    className="p-2 text-white shadow-sm transition-all hover:scale-110 active:scale-95 flex items-center gap-1"
                     style={{ background: "var(--color-error)", borderRadius: "var(--radius-lg)" }}
-                    aria-label={`候補(${exp.targetX}, ${exp.targetY})を却下`}
+                    aria-label={`候補(${exp.targetX}, ${exp.targetY})を却下に投票`}
                   >
                     <X size={16} />
+                    {(exp.votes?.filter((v) => v.vote === "REJECT").length ?? 0) > 0 && (
+                      <span className="text-[10px] font-bold">
+                        {exp.votes!.filter((v) => v.vote === "REJECT").length}
+                      </span>
+                    )}
                   </button>
                 </div>
               )}

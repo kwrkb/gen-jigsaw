@@ -1,6 +1,8 @@
+import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "@/lib/errors";
+import { autoAdoptStaleExpansions } from "@/lib/auto-adopt";
 
 export async function GET(
   _req: NextRequest,
@@ -18,6 +20,9 @@ export async function GET(
         where: {
           status: { notIn: ["ADOPTED", "REJECTED"] },
         },
+        include: {
+          votes: true,
+        },
       },
       locks: {
         where: {
@@ -28,6 +33,12 @@ export async function GET(
   });
 
   if (!room) return notFound("Room not found");
+
+  // DONE 状態の Expansion がある場合のみ自動決定を試みる（Gemini 指摘）
+  const hasDone = room.expansions.some((e) => e.status === "DONE");
+  if (hasDone) {
+    after(() => autoAdoptStaleExpansions(id));
+  }
 
   return NextResponse.json(room);
 }

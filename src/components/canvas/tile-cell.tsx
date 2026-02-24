@@ -110,7 +110,7 @@ export const TileCell = memo(function TileCell({
               </button>
             </motion.div>
           )}
-          {expansion && expansion.status === "DONE" && isOwner && (
+          {expansion && expansion.status === "DONE" && (
             <motion.div
               key="done"
               initial={{ opacity: 0 }}
@@ -134,7 +134,12 @@ export const TileCell = memo(function TileCell({
                   style={{ background: "var(--color-success)", borderRadius: "var(--radius-md)" }}
                 >
                   <Check size={16} />
-                  採用
+                  採用に投票
+                  {(expansion.votes?.filter((v) => v.vote === "ADOPT").length ?? 0) > 0 && (
+                    <span className="ml-0.5 opacity-80">
+                      {expansion.votes!.filter((v) => v.vote === "ADOPT").length}
+                    </span>
+                  )}
                 </button>
                 <button
                   onClick={() => onReject(expansion)}
@@ -142,7 +147,12 @@ export const TileCell = memo(function TileCell({
                   style={{ background: "var(--color-error)", borderRadius: "var(--radius-md)" }}
                 >
                   <X size={16} />
-                  却下
+                  却下に投票
+                  {(expansion.votes?.filter((v) => v.vote === "REJECT").length ?? 0) > 0 && (
+                    <span className="ml-0.5 opacity-80">
+                      {expansion.votes!.filter((v) => v.vote === "REJECT").length}
+                    </span>
+                  )}
                 </button>
               </div>
             </motion.div>
@@ -191,34 +201,42 @@ export const TileCell = memo(function TileCell({
               />
             )}
             <AnimatePresence>
-              {isOwner && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10"
-                  style={{ background: "var(--color-overlay)" }}
-                >
-                  <span className="text-white text-xs font-bold uppercase tracking-widest">候補あり</span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onAdopt(expansion)}
-                      className="px-4 py-2 text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-lg"
-                      style={{ background: "var(--color-success)", borderRadius: "var(--radius-md)" }}
-                    >
-                      <Check size={16} />
-                      採用
-                    </button>
-                    <button
-                      onClick={() => onReject(expansion)}
-                      className="px-4 py-2 text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-lg"
-                      style={{ background: "var(--color-error)", borderRadius: "var(--radius-md)" }}
-                    >
-                      <X size={16} />
-                      却下
-                    </button>
-                  </div>
-                </motion.div>
-              )}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10"
+                style={{ background: "var(--color-overlay)" }}
+              >
+                <span className="text-white text-xs font-bold uppercase tracking-widest">候補あり</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onAdopt(expansion)}
+                    className="px-4 py-2 text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-lg"
+                    style={{ background: "var(--color-success)", borderRadius: "var(--radius-md)" }}
+                  >
+                    <Check size={16} />
+                    採用に投票
+                    {(expansion.votes?.filter((v) => v.vote === "ADOPT").length ?? 0) > 0 && (
+                      <span className="ml-0.5 opacity-80">
+                        {expansion.votes!.filter((v) => v.vote === "ADOPT").length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => onReject(expansion)}
+                    className="px-4 py-2 text-white text-xs font-bold transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-lg"
+                    style={{ background: "var(--color-error)", borderRadius: "var(--radius-md)" }}
+                  >
+                    <X size={16} />
+                    却下に投票
+                    {(expansion.votes?.filter((v) => v.vote === "REJECT").length ?? 0) > 0 && (
+                      <span className="ml-0.5 opacity-80">
+                        {expansion.votes!.filter((v) => v.vote === "REJECT").length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
             </AnimatePresence>
           </>
         ) : (
