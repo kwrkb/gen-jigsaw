@@ -9,11 +9,12 @@ Gen-Jigsaw is a multiplayer web app where players collaboratively build an ever-
 ## Features
 
 - **Collaborative world-building** — Multiple users expand the grid simultaneously
-- **AI image generation** — Generate tiles via DALL-E 2 (or mock provider for development)
+- **AI image generation** — Generate tiles via DALL-E 2 (mock provider available for development)
+- **Voting & auto-adopt** — Users vote on expansion candidates; stale expansions are auto-resolved after a timeout
 - **Real-time updates** — Server-Sent Events push room state to all participants
 - **Lock system** — Optimistic locking prevents conflicting edits on the same cell (90s TTL)
 - **Session auth** — Cookie-based session management via iron-session
-- **Storage abstraction** — Pluggable provider pattern (local filesystem / S3 / R2)
+- **Storage abstraction** — Pluggable provider pattern (currently local filesystem; S3/R2 planned)
 
 ## Getting Started
 
@@ -60,6 +61,10 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | [Prisma](https://www.prisma.io/) | 6 | ORM |
 | SQLite | — | Database (local) |
 | [Zod](https://zod.dev/) | 3 | Validation |
+| [Vitest](https://vitest.dev/) | 3 | Testing |
+| [Framer Motion](https://www.framer.com/motion/) | 12 | Animations |
+| [Lucide React](https://lucide.dev/) | — | Icons |
+| [Sharp](https://sharp.pixelplumbing.com/) | — | Image processing |
 
 ## Architecture
 
@@ -80,9 +85,10 @@ src/
 ├── components/expansion/ # Prompt input & candidate list UI
 ├── hooks/                # useUser, useRoom, useToast
 ├── lib/                  # Prisma singleton, Zod schemas, lock service
-│   └── image-gen/        # Provider pattern for image generation
+│   ├── image-gen/        # Provider pattern for image generation
+│   └── storage/          # Storage provider abstraction
 └── types/                # Shared TypeScript types
-prisma/schema.prisma      # Database schema (User, Room, Tile, Expansion, Lock)
+prisma/schema.prisma      # Database schema (User, Room, Tile, Expansion, ExpansionVote, Lock)
 ```
 
 ### Expansion Lifecycle
@@ -90,7 +96,9 @@ prisma/schema.prisma      # Database schema (User, Room, Tile, Expansion, Lock)
 ```
 User clicks "+" → Acquire Lock → Enter Prompt → Create Expansion (QUEUED)
   → Run Image Generation (RUNNING → DONE)
-  → Owner Adopts (→ ADOPTED, creates Tile) or Rejects (→ REJECTED)
+  → Users vote (ADOPT / REJECT)
+  → Owner adopts (→ ADOPTED, creates Tile) or rejects (→ REJECTED)
+  → Or: auto-adopt after timeout (default 60s) based on vote tally
 ```
 
 Status transitions: `QUEUED → RUNNING → DONE → ADOPTED / REJECTED` (or `FAILED`)
@@ -118,6 +126,7 @@ Status transitions: `QUEUED → RUNNING → DONE → ADOPTED / REJECTED` (or `FA
 ```bash
 npm run dev          # Start dev server (localhost:3000)
 npm run build        # Production build
+npm run test         # Run tests (Vitest)
 npm run db:push      # Apply Prisma schema to SQLite
 npm run db:studio    # Open Prisma Studio GUI
 npx tsc --noEmit     # Type check
@@ -142,10 +151,11 @@ Gen-Jigsaw は、複数人で協力して画像グリッドを拡張していく
 
 - **協働ワールド構築** — 複数ユーザーが同時にグリッドを拡張
 - **AI画像生成** — DALL-E 2 対応（開発用モックプロバイダあり）
+- **投票 & 自動採用** — ユーザーが拡張候補に投票。一定時間後に投票結果に基づき自動決定
 - **リアルタイム更新** — Server-Sent Events でルーム状態をプッシュ配信
 - **ロックシステム** — 楽観的ロック（90秒TTL）で競合を防止
 - **セッション認証** — iron-session による Cookie ベース認証
-- **ストレージ抽象化** — プロバイダパターンで local / S3 / R2 を切替
+- **ストレージ抽象化** — プロバイダパターン（現在 local のみ。S3/R2 は計画中）
 
 ### セットアップ
 
@@ -180,6 +190,7 @@ npm run dev
 ```bash
 npm run dev          # 開発サーバー起動
 npm run build        # プロダクションビルド
+npm run test         # テスト実行 (Vitest)
 npm run db:push      # Prisma スキーマを SQLite に適用
 npm run db:studio    # Prisma Studio GUI を起動
 npx tsc --noEmit     # 型チェック
@@ -191,6 +202,7 @@ npx tsc --noEmit     # 型チェック
 - **User** — 表示名のみ（セッション認証）
 - **Tile** — 確定済みタイル。`(roomId, x, y)` でユニーク
 - **Expansion** — 拡張候補。`QUEUED → RUNNING → DONE → ADOPTED/REJECTED`
+- **ExpansionVote** — 拡張候補への投票。`(expansionId, userId)` でユニーク
 - **Lock** — セルのロック（90秒TTL）。同一セルへの競合書き込みを防止
 
 </details>
