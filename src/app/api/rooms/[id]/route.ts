@@ -1,6 +1,8 @@
+import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "@/lib/errors";
+import { autoAdoptStaleExpansions } from "@/lib/auto-adopt";
 
 export async function GET(
   _req: NextRequest,
@@ -28,6 +30,8 @@ export async function GET(
   });
 
   if (!room) return notFound("Room not found");
+
+  after(() => autoAdoptStaleExpansions(id));
 
   return NextResponse.json(room);
 }
