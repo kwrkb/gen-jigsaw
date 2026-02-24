@@ -12,10 +12,11 @@ model User {
   displayName String
   createdAt   DateTime @default(now())
 
-  rooms      Room[]      @relation("RoomOwner")
-  tiles      Tile[]
-  expansions Expansion[]
-  locks      Lock[]
+  rooms          Room[]           @relation("RoomOwner")
+  tiles          Tile[]
+  expansions     Expansion[]
+  locks          Lock[]
+  expansionVotes ExpansionVote[]
 }
 
 model Room {
@@ -63,8 +64,23 @@ model Expansion {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  room      Room @relation(fields: [roomId], references: [id])
-  createdBy User @relation(fields: [createdByUserId], references: [id])
+  room      Room            @relation(fields: [roomId], references: [id])
+  createdBy User            @relation(fields: [createdByUserId], references: [id])
+  votes     ExpansionVote[]
+}
+
+model ExpansionVote {
+  id          String   @id
+  expansionId String
+  userId      String
+  vote        String   // "ADOPT" | "REJECT"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  expansion Expansion @relation(fields: [expansionId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([expansionId, userId])
 }
 
 model Lock {

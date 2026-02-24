@@ -7,6 +7,7 @@ import {
   unauthorized,
 } from "@/lib/errors";
 import { RejectExpansionSchema } from "@/lib/validation";
+import { createId } from "@paralleldrive/cuid2";
 import { getUserIdFromSession } from "@/lib/auth";
 import { emitRoomEvent } from "@/lib/sse-emitter";
 
@@ -21,6 +22,7 @@ export async function POST(
   const body = await req.json().catch(() => null);
   const parsed = RejectExpansionSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.message);
+
   const expansion = await prisma.expansion.findUnique({ where: { id } });
   if (!expansion) return notFound("Expansion not found");
 
@@ -28,21 +30,12 @@ export async function POST(
     return conflict(`Expansion is not in DONE status`);
   }
 
-  // ロック解放 + status更新
-  await prisma.$transaction([
-    prisma.expansion.update({
-      where: { id },
-      data: { status: "REJECTED" },
-    }),
-    prisma.lock.deleteMany({
-      where: {
-        roomId: expansion.roomId,
-        x: expansion.targetX,
-        y: expansion.targetY,
-      },
-    }),
-  ]);
+  await prisma.expansionVote.upsert({
+    where: { expansionId_userId: { expansionId: id, userId } },
+    create: { id: createId(), expansionId: id, userId, vote: "REJECT" },
+    update: { vote: "REJECT" },
+  });
 
   emitRoomEvent(expansion.roomId, "room_update");
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ vote: "REJECT" });
 }

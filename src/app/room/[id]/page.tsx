@@ -65,7 +65,7 @@ export default function RoomPage({ params }: RoomPageProps) {
         addToast(data.error ?? "採用に失敗しました", "error");
         return;
       }
-      addToast("タイルを採用しました！", "success");
+      addToast("採用に投票しました", "success");
       refetch();
     } catch {
       addToast("ネットワークエラー", "error");
@@ -101,7 +101,7 @@ export default function RoomPage({ params }: RoomPageProps) {
         addToast(data.error ?? "却下に失敗しました", "error");
         return;
       }
-      addToast("候補を却下しました", "info");
+      addToast("却下に投票しました", "info");
       refetch();
     } catch {
       addToast("ネットワークエラー", "error");

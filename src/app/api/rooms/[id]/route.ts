@@ -20,6 +20,9 @@ export async function GET(
         where: {
           status: { notIn: ["ADOPTED", "REJECTED"] },
         },
+        include: {
+          votes: true,
+        },
       },
       locks: {
         where: {
@@ -31,7 +34,11 @@ export async function GET(
 
   if (!room) return notFound("Room not found");
 
-  after(() => autoAdoptStaleExpansions(id));
+  // DONE 状態の Expansion がある場合のみ自動決定を試みる（Gemini 指摘）
+  const hasDone = room.expansions.some((e) => e.status === "DONE");
+  if (hasDone) {
+    after(() => autoAdoptStaleExpansions(id));
+  }
 
   return NextResponse.json(room);
 }
