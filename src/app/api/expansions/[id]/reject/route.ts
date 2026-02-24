@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import {
   badRequest,
   conflict,
-  forbidden,
   notFound,
   unauthorized,
 } from "@/lib/errors";
@@ -27,12 +26,6 @@ export async function POST(
 
   if (expansion.status !== "DONE") {
     return conflict(`Expansion is not in DONE status`);
-  }
-
-  const room = await prisma.room.findUnique({ where: { id: expansion.roomId } });
-  if (!room) return notFound("Room not found");
-  if (room.ownerUserId !== userId) {
-    return forbidden("Only the room owner can reject expansions");
   }
 
   // ロック解放 + status更新

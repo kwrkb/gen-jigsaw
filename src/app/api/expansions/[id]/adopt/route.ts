@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import {
   badRequest,
   conflict,
-  forbidden,
   notFound,
   unauthorized,
 } from "@/lib/errors";
@@ -33,13 +32,6 @@ export async function POST(
 
   if (!expansion.resultImageUrl) {
     return conflict("Expansion has no result image");
-  }
-
-  // ルームのオーナーのみ採用可能
-  const room = await prisma.room.findUnique({ where: { id: expansion.roomId } });
-  if (!room) return notFound("Room not found");
-  if (room.ownerUserId !== userId) {
-    return forbidden("Only the room owner can adopt expansions");
   }
 
   // トランザクション: Tile作成 + status更新 + ロック解放

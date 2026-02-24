@@ -21,37 +21,58 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
 
   if (stale.length === 0) return;
 
+  // (targetX, targetY) でグルーピング
+  const byCell = new Map<string, typeof stale>();
+  for (const exp of stale) {
+    const key = `${exp.targetX},${exp.targetY}`;
+    const arr = byCell.get(key) ?? [];
+    arr.push(exp);
+    byCell.set(key, arr);
+  }
+
   let adopted = 0;
-  for (const expansion of stale) {
-    if (!expansion.resultImageUrl) continue;
+  for (const [, candidates] of byCell) {
+    // ランダムに1件選択
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    const rejects = candidates.filter((e) => e.id !== pick.id);
+
+    if (!pick.resultImageUrl) continue;
 
     try {
       await prisma.$transaction([
         prisma.tile.create({
           data: {
             id: createId(),
-            roomId: expansion.roomId,
-            x: expansion.targetX,
-            y: expansion.targetY,
-            imageUrl: expansion.resultImageUrl,
-            createdByUserId: expansion.createdByUserId,
+            roomId: pick.roomId,
+            x: pick.targetX,
+            y: pick.targetY,
+            imageUrl: pick.resultImageUrl,
+            createdByUserId: pick.createdByUserId,
           },
         }),
         prisma.expansion.update({
-          where: { id: expansion.id },
+          where: { id: pick.id },
           data: { status: "ADOPTED" },
         }),
+        ...(rejects.length > 0
+          ? [
+              prisma.expansion.updateMany({
+                where: { id: { in: rejects.map((e) => e.id) } },
+                data: { status: "REJECTED" },
+              }),
+            ]
+          : []),
         prisma.lock.deleteMany({
           where: {
-            roomId: expansion.roomId,
-            x: expansion.targetX,
-            y: expansion.targetY,
+            roomId: pick.roomId,
+            x: pick.targetX,
+            y: pick.targetY,
           },
         }),
       ]);
       adopted++;
     } catch (err) {
-      console.warn(`[auto-adopt] expansion ${expansion.id} failed:`, err);
+      console.warn(`[auto-adopt] expansion ${pick.id} failed:`, err);
     }
   }
 
