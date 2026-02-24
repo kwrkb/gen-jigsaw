@@ -99,10 +99,13 @@ Status transitions: `QUEUED → RUNNING → DONE → ADOPTED / REJECTED` (or `FA
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/users` | Create user |
+| POST | `/api/users` | Create user (sets session cookie) |
+| GET/DELETE | `/api/session` | Get current user / logout |
 | GET | `/api/rooms` | List rooms |
 | POST | `/api/rooms` | Create room (auto-generates seed tile at 0,0) |
 | GET | `/api/rooms/:id` | Room detail (tiles, expansions, locks) |
+| GET | `/api/rooms/:id/events` | SSE stream for real-time updates |
+| POST | `/api/rooms/:id/generate-initial` | Generate initial tile image |
 | POST | `/api/rooms/:id/locks` | Acquire lock |
 | DELETE | `/api/rooms/:id/locks` | Release lock |
 | POST | `/api/rooms/:id/expansions` | Create expansion |
