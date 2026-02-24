@@ -65,6 +65,13 @@
   - [x] dalle2-provider: `sanitizePromptText` で制御文字除去+長さ制限（インジェクション対策）
   - [x] dalle2-provider: `executeWithRetry` にリトライ+DL+アップロードを共通化
 
+### Steps（シームレスタイル接続）
+- [ ] 隣接タイルコンテキストによるシームレス画像生成
+  - [ ] `provider.ts`: `GenerateInput` に `adjacentImages` フィールド追加
+  - [ ] `run/route.ts`: ターゲットセルの上下左右タイルを DB から取得
+  - [ ] `dalle2-provider.ts`: 512x512 コンポジットキャンバス + エッジストリップ + クロップ
+  - [ ] `route.test.ts`: `tile.findMany` モック追加 + 隣接タイルテスト追加
+
 ### Notes
 - 2026-02-23: UI/UX Phase 3 を完了。`tile-cell` にフレーム効果を追加し、拡張セルをパルス演出＋アイコン強化で再設計。`candidate-list` はタブ化（進行中/採用待ち/履歴）とステータスフィルタを実装。
 - 2026-02-23: `lucide-react` / `framer-motion` をインストールし、UI/UX Phase 2 を完了。主要コンポーネントのアイコンを Lucide に置換し、Framer Motion による滑らかなアニメーションを導入。

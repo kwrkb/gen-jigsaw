@@ -5,6 +5,7 @@ export interface GenerateInput {
   direction: Direction;
   prompt: PromptJson;
   size: number;
+  adjacentImages?: Partial<Record<Direction, string>>;
 }
 
 export interface GenerateInitialInput {
