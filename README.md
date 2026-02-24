@@ -4,8 +4,7 @@
 
 Gen-Jigsaw is a multiplayer web app where players collaboratively build an ever-expanding image grid. Starting from a single seed tile, users generate new tiles in adjacent cells using AI image generation. The room owner curates the world by adopting or rejecting proposed expansions.
 
-<!-- TODO: Add screenshot/demo GIF -->
-<!-- ![Demo](docs/demo.gif) -->
+![Demo](docs/demo.gif)
 
 ## Features
 

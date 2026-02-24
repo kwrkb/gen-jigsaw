@@ -247,6 +247,8 @@ export const TileCell = memo(function TileCell({
       <motion.div
         whileHover={!isLocked ? { scale: 0.98 } : {}}
         whileTap={!isLocked ? { scale: 0.95 } : {}}
+        role="button"
+        tabIndex={0}
         className="relative flex items-center justify-center cursor-pointer transition-all duration-300 group overflow-hidden"
         style={{
           width: CELL_SIZE,
@@ -260,6 +262,12 @@ export const TileCell = memo(function TileCell({
           cursor: isLocked ? "not-allowed" : "pointer",
         }}
         onClick={() => !isLocked && onExpand(x, y, adjacentTile)}
+        onKeyDown={(e: React.KeyboardEvent) => {
+          if ((e.key === "Enter" || e.key === " ") && !isLocked) {
+            e.preventDefault();
+            onExpand(x, y, adjacentTile);
+          }
+        }}
         onMouseEnter={(e) => {
           if (!isLocked) {
             e.currentTarget.style.borderColor = "var(--color-accent)";

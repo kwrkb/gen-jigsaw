@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { RoomDetail } from "@/types";
 
+const FALLBACK_POLL_INTERVAL = 3_000;
+
 export function useRoom(roomId: string) {
   const [room, setRoom] = useState<RoomDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,14 +39,17 @@ export function useRoom(roomId: string) {
       fetchRoom();
     });
 
-    eventSource.onerror = (e) => {
-      console.error("SSE error:", e);
-      // Fallback to polling or just log it
+    // Fallback polling — keeps UI fresh when SSE is disconnected
+    const pollTimer = setInterval(fetchRoom, FALLBACK_POLL_INTERVAL);
+
+    eventSource.onerror = () => {
+      console.warn("SSE connection lost, falling back to polling");
     };
 
     return () => {
       eventSource.close();
       eventSourceRef.current = null;
+      clearInterval(pollTimer);
     };
   }, [roomId, fetchRoom]);
 
