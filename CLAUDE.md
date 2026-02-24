@@ -13,9 +13,10 @@ Gen-Jigsaw is a collaborative AI-powered outpainting puzzle app. Users expand a 
 ```bash
 npm run dev          # Start dev server (localhost:3000)
 npm run build        # Production build
+npm run test         # Run tests (Vitest)
 npm run db:push      # Apply Prisma schema to SQLite
 npm run db:studio    # Open Prisma Studio GUI
-npx tsc --noEmit     # Type check (no linter/test framework configured)
+npx tsc --noEmit     # Type check
 ```
 
 Node.js 24 is managed via mise (`mise.toml`).
@@ -34,16 +35,19 @@ Client (React + hooks) → Next.js API Routes → Prisma → SQLite (`prisma/dev
 - `src/components/expansion/` — Prompt input & candidate list UI
 - `src/hooks/` — `useUser` (iron-session cookie), `useRoom` (SSE + 3s polling fallback), `useToast`
 - `src/lib/` — Prisma singleton, Zod validation schemas, error helpers, lock service
-- `src/lib/image-gen/` — Provider pattern for image generation (currently mock)
+- `src/lib/image-gen/` — Provider pattern for image generation (mock + DALL-E 2)
+- `src/lib/storage/` — Storage provider abstraction (currently local filesystem)
 - `src/types/` — Shared TypeScript types
-- `prisma/schema.prisma` — Database schema (User, Room, Tile, Expansion, Lock)
+- `prisma/schema.prisma` — Database schema (User, Room, Tile, Expansion, ExpansionVote, Lock)
 
 ### Core Workflow: Expansion Lifecycle
 
 1. User clicks "+" on adjacent cell → **acquires lock** (90s TTL)
 2. Enters prompt → creates **Expansion** (status: QUEUED)
 3. Client calls `/api/expansions/[id]/run` → image generation → status: DONE
-4. Room owner adopts (creates Tile + releases lock) or rejects (releases lock)
+4. Users vote on candidates (ExpansionVote: ADOPT / REJECT)
+5. Room owner adopts (creates Tile + releases lock) or rejects (releases lock)
+6. Stale DONE expansions are auto-resolved after timeout (`auto-adopt.ts`, default 60s)
 
 Status transitions: `QUEUED → RUNNING → DONE → ADOPTED/REJECTED` (or `FAILED`)
 
@@ -53,7 +57,7 @@ Optimistic locking per grid cell `(roomId, x, y)` with 90-second TTL. SQLite ser
 
 ### Image Generation (`src/lib/image-gen/`)
 
-Provider interface pattern. `MockImageGenProvider` copies `public/placeholder.png` to `public/generated/{cuid}.png`. Swap via `IMAGE_GEN_PROVIDER` env var.
+Provider interface pattern. `MockImageGenProvider` copies `public/placeholder.png` to `public/generated/{cuid}.png`. `DallE2ImageGenProvider` uses OpenAI API. Swap via `IMAGE_GEN_PROVIDER` env var (`mock` or `dalle2`).
 
 ### State Management
 
