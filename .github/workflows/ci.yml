@@ -14,6 +14,9 @@ jobs:
       - run: npm install
       - run: npx tsc --noEmit
       - run: npm run build
+        env:
+          SESSION_SECRET: ci-build-secret-at-least-32-characters-long
+          DATABASE_URL: file:./ci.db
       - run: npm test
         env:
           SESSION_SECRET: test-secret-at-least-32-characters-long

@@ -32,7 +32,7 @@ Client (React + hooks) → Next.js API Routes → Prisma → SQLite (`prisma/dev
 - `src/app/room/[id]/` — Room detail page
 - `src/components/canvas/` — Interactive grid with pan/zoom (`tile-grid.tsx`, `tile-cell.tsx`)
 - `src/components/expansion/` — Prompt input & candidate list UI
-- `src/hooks/` — `useUser` (localStorage), `useRoom` (3s polling), `useToast`
+- `src/hooks/` — `useUser` (iron-session cookie), `useRoom` (SSE + 3s polling fallback), `useToast`
 - `src/lib/` — Prisma singleton, Zod validation schemas, error helpers, lock service
 - `src/lib/image-gen/` — Provider pattern for image generation (currently mock)
 - `src/types/` — Shared TypeScript types
@@ -57,17 +57,20 @@ Provider interface pattern. `MockImageGenProvider` copies `public/placeholder.pn
 
 ### State Management
 
-- **User identity:** localStorage (`gen-jigsaw:user`) — no auth
-- **Room state:** Client-side polling every 3 seconds via `useRoom` hook — no WebSocket/SSE
+- **User identity:** iron-session cookie (`gen_jigsaw_session`) — sealed/encrypted, httpOnly
+- **Room state:** SSE via `/api/rooms/:id/events` with 3-second polling fallback (`useRoom` hook)
 - **Path alias:** `@/*` → `./src/*`
 
 ### API Endpoints
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| POST | `/api/users` | Create user |
-| GET/POST | `/api/rooms` | List / create room (auto-generates tile at 0,0) |
+| POST | `/api/users` | Create user (sets session cookie) |
+| GET/DELETE | `/api/session` | Get current user / logout |
+| GET/POST | `/api/rooms` | List / create room |
 | GET | `/api/rooms/:id` | Room detail (tiles, expansions, locks) |
+| GET | `/api/rooms/:id/events` | SSE stream for real-time updates |
+| POST | `/api/rooms/:id/generate-initial` | Generate initial tile image |
 | POST/DELETE | `/api/rooms/:id/locks` | Acquire / release lock |
 | POST | `/api/rooms/:id/expansions` | Create expansion |
 | POST | `/api/expansions/:id/run` | Execute image generation |

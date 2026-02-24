@@ -28,64 +28,15 @@ export default function RoomPage({ params }: RoomPageProps) {
   } | null>(null);
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
 
-  if (userLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div
-          className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
-          style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
-        />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <UserSetup
-        onSetup={async (name) => {
-          await createUser(name);
-        }}
-      />
-    );
-  }
-
-  if (roomLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div
-          className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
-          style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
-        />
-      </div>
-    );
-  }
-
-  if (error || !room) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p style={{ color: "var(--color-text-secondary)" }}>
-          {error ?? "ルームが見つかりません"}
-        </p>
-        <Link
-          href="/"
-          className="hover:underline"
-          style={{ color: "var(--color-accent)" }}
-        >
-          ← ルーム一覧に戻る
-        </Link>
-      </div>
-    );
-  }
-
-  const isOwner = room.ownerUserId === user.id;
+  const isOwner = !!(room && user && room.ownerUserId === user.id);
 
   // PENDING 状態の初期タイルを自動トリガー（オーナーのみ）
   const initialTriggerFired = useRef(false);
   useEffect(() => {
     if (
       isOwner &&
-      room.initialTileStatus === "PENDING" &&
-      room.initialPrompt &&
+      room?.initialTileStatus === "PENDING" &&
+      room?.initialPrompt &&
       !initialTriggerFired.current
     ) {
       initialTriggerFired.current = true;
@@ -96,7 +47,7 @@ export default function RoomPage({ params }: RoomPageProps) {
         }
       );
     }
-  }, [isOwner, room.initialTileStatus, room.initialPrompt, roomId]);
+  }, [isOwner, room?.initialTileStatus, room?.initialPrompt, roomId]);
 
   const handleExpand = useCallback((x: number, y: number, fromTile: Tile) => {
     setExpandTarget({ x, y, fromTile });
@@ -156,6 +107,55 @@ export default function RoomPage({ params }: RoomPageProps) {
       addToast("ネットワークエラー", "error");
     }
   }, [addToast, refetch]);
+
+  if (userLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div
+          className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
+        />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <UserSetup
+        onSetup={async (name) => {
+          await createUser(name);
+        }}
+      />
+    );
+  }
+
+  if (roomLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div
+          className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: "var(--color-accent)", borderTopColor: "transparent" }}
+        />
+      </div>
+    );
+  }
+
+  if (error || !room) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p style={{ color: "var(--color-text-secondary)" }}>
+          {error ?? "ルームが見つかりません"}
+        </p>
+        <Link
+          href="/"
+          className="hover:underline"
+          style={{ color: "var(--color-accent)" }}
+        >
+          ← ルーム一覧に戻る
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col" style={{ background: "var(--color-surface-0)" }}>
