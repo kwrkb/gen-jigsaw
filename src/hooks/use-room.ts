@@ -39,17 +39,27 @@ export function useRoom(roomId: string) {
       fetchRoom();
     });
 
-    // Fallback polling — keeps UI fresh when SSE is disconnected
-    const pollTimer = setInterval(fetchRoom, FALLBACK_POLL_INTERVAL);
+    // Fallback polling — only activated when SSE disconnects
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
 
     eventSource.onerror = () => {
-      console.warn("SSE connection lost, falling back to polling");
+      if (!pollTimer) {
+        console.warn("SSE connection lost, falling back to polling");
+        pollTimer = setInterval(fetchRoom, FALLBACK_POLL_INTERVAL);
+      }
     };
+
+    eventSource.addEventListener("ready", () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    });
 
     return () => {
       eventSource.close();
       eventSourceRef.current = null;
-      clearInterval(pollTimer);
+      if (pollTimer) clearInterval(pollTimer);
     };
   }, [roomId, fetchRoom]);
 
