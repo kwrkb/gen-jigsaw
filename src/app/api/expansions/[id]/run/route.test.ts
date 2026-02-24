@@ -10,6 +10,7 @@ type PrismaMock = {
   };
   tile: {
     findUnique: FnMock;
+    findMany: FnMock;
   };
   lock: {
     deleteMany: FnMock;
@@ -25,6 +26,7 @@ vi.mock("@/lib/prisma", () => ({
     },
     tile: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
     },
     lock: {
       deleteMany: vi.fn(),
@@ -91,6 +93,7 @@ describe("POST /api/expansions/:id/run", () => {
       id: "tile-1",
       imageUrl: "/placeholder.png",
     });
+    prismaMock.tile.findMany.mockResolvedValue([]);
     prismaMock.expansion.update
       .mockResolvedValueOnce({ id: "exp-1", status: "RUNNING" })
       .mockResolvedValueOnce({
@@ -137,6 +140,7 @@ describe("POST /api/expansions/:id/run", () => {
       id: "tile-1",
       imageUrl: "/placeholder.png",
     });
+    prismaMock.tile.findMany.mockResolvedValue([]);
     prismaMock.expansion.update.mockResolvedValue({ id: "exp-1", status: "RUNNING" });
     prismaMock.lock.deleteMany.mockResolvedValue({ count: 1 });
     prismaMock.$transaction.mockResolvedValue([]);

@@ -57,12 +57,13 @@ export async function POST(
   });
 
   const adjacentImages: Partial<Record<Direction, string>> = {};
+  const coordToDir = new Map<string, Direction>();
+  for (const { dir, dx, dy } of NEIGHBOR_OFFSETS) {
+    coordToDir.set(`${expansion.targetX + dx},${expansion.targetY + dy}`, dir);
+  }
   for (const tile of neighborTiles) {
-    for (const { dir, dx, dy } of NEIGHBOR_OFFSETS) {
-      if (tile.x === expansion.targetX + dx && tile.y === expansion.targetY + dy) {
-        adjacentImages[dir] = tile.imageUrl;
-      }
-    }
+    const dir = coordToDir.get(`${tile.x},${tile.y}`);
+    if (dir) adjacentImages[dir] = tile.imageUrl;
   }
 
   // RUNNING に変更
