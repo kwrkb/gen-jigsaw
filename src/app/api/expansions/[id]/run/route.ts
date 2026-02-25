@@ -26,14 +26,17 @@ export async function POST(
   const parsed = RunExpansionSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.message);
 
-  const expansion = await prisma.expansion.findUnique({ where: { id } });
+  const expansion = await prisma.expansion.findUnique({
+    where: { id },
+    include: { room: { select: { ownerUserId: true } } },
+  });
   if (!expansion) return notFound("Expansion not found");
 
-  if (expansion.createdByUserId !== userId) {
-    const room = await prisma.room.findUnique({ where: { id: expansion.roomId } });
-    if (room?.ownerUserId !== userId) {
-      return forbidden("Not authorized to run this expansion");
-    }
+  if (
+    expansion.createdByUserId !== userId &&
+    expansion.room.ownerUserId !== userId
+  ) {
+    return forbidden("Not authorized to run this expansion");
   }
 
   if (expansion.status !== "QUEUED") {

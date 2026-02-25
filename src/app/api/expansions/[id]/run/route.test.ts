@@ -8,9 +8,6 @@ type PrismaMock = {
     findUnique: FnMock;
     update: FnMock;
   };
-  room: {
-    findUnique: FnMock;
-  };
   tile: {
     findUnique: FnMock;
     findMany: FnMock;
@@ -26,9 +23,6 @@ vi.mock("@/lib/prisma", () => ({
     expansion: {
       findUnique: vi.fn(),
       update: vi.fn(),
-    },
-    room: {
-      findUnique: vi.fn(),
     },
     tile: {
       findUnique: vi.fn(),
@@ -95,6 +89,7 @@ describe("POST /api/expansions/:id/run", () => {
       targetX: 1,
       targetY: 0,
       createdByUserId: "user-1",
+      room: { ownerUserId: "user-1" },
     });
     prismaMock.tile.findUnique.mockResolvedValue({
       id: "tile-1",
@@ -143,6 +138,7 @@ describe("POST /api/expansions/:id/run", () => {
       targetX: 1,
       targetY: 0,
       createdByUserId: "user-1",
+      room: { ownerUserId: "user-1" },
     });
     prismaMock.tile.findUnique.mockResolvedValue({
       id: "tile-1",
@@ -181,10 +177,7 @@ describe("POST /api/expansions/:id/run", () => {
       targetX: 1,
       targetY: 0,
       createdByUserId: "user-other",
-    });
-    prismaMock.room.findUnique.mockResolvedValue({
-      id: "room-1",
-      ownerUserId: "user-owner",
+      room: { ownerUserId: "user-owner" },
     });
 
     const { POST } = await import("./route");
@@ -217,10 +210,7 @@ describe("POST /api/expansions/:id/run", () => {
       targetX: 1,
       targetY: 0,
       createdByUserId: "user-other",
-    });
-    prismaMock.room.findUnique.mockResolvedValue({
-      id: "room-1",
-      ownerUserId: "user-1",
+      room: { ownerUserId: "user-1" },
     });
     prismaMock.tile.findUnique.mockResolvedValue({
       id: "tile-1",
