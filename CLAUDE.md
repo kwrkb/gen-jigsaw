@@ -81,3 +81,21 @@ Provider interface pattern. `MockImageGenProvider` copies `public/placeholder.pn
 | POST | `/api/expansions/:id/reject` | Record REJECT vote |
 
 All endpoints validate input with Zod schemas from `src/lib/validation.ts`.
+
+## Implementation Guidelines
+
+### SSE + Fallback Polling (`useRoom`)
+
+`use-room.ts` のSSE/ポーリング制御は過去4回修正されている。変更時は以下を守ること:
+
+- **`onopen`**: SSE接続（再接続含む）確立時に発火。ここでフォールバックポーリングを停止する
+- **`onerror`**: 切断時に発火。ここでフォールバックポーリングを開始する
+- **`room_update`イベント**: データ受信時。`fetchRoom()` + ポーリング停止
+- カスタムイベント（`ready`等）をポーリング制御に使わない。サーバー実装に依存し、再接続ループ時に期待通り発火しない場合がある
+
+### fetch後のハンドリング
+
+fire-and-forget的なfetch（`generate-initial`等）では、成功・HTTPエラー・ネットワークエラーの**3ケース全て**を最初から考慮する。典型的には `.finally(callback)` で統一するのが最もシンプル。
+
+- `res.ok` のみで分岐するとHTTPエラー時に状態更新が漏れる
+- `catch` でフラグをリセットすると `refetch` → 再評価 → 即再fetch のループリスクがある

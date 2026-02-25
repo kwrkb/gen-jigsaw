@@ -75,7 +75,21 @@
 ### Steps（Stale Session 修正）
 - [ ] `auth.ts`: `getUserIdFromSession` に DB 存在チェック追加（FK 制約エラー P2003 修正）
 
+### Steps（認可チェック修正）
+- [x] Issue #21: `run/route.ts` の認可チェック不足を修正
+  > expansion 作成者でもルームオーナーでもないユーザーは 403 を返すよう修正。`forbidden` を import 追加。`route.test.ts` の prisma モックに `room.findUnique` を追加し、既存テストの expansion モックに `createdByUserId` を設定。
+
+### Steps（初期タイル拡張セル表示不具合修正 — PR #31）
+- [x] `page.tsx`: generate-initial 完了後に `refetch()` を呼び、リロードなしで拡張セルを表示
+- [x] `use-room.ts`: SSE ポーリング制御の修正（`ready` イベント依存 → `room_update` + `onopen` で停止）
+- [x] PRレビューコメント対応
+  - [x] `use-room.ts`: `onopen` ハンドラ追加で SSE 再接続時にフォールバックポーリングを即停止
+  - [x] `page.tsx`: `.then`/`.catch` → `.finally(refetch)` に統一（HTTPエラー時の未更新・ループリスク解消）
+- [x] `CLAUDE.md` に Implementation Guidelines 追加（SSEポーリング制御・fetchハンドリングの過去の繰り返し修正を教訓として記録）
+
 ### Notes
+- 2026-02-25: PR #31 レビューコメント対応。`use-room.ts` に `onopen` ハンドラ追加、`page.tsx` の fetch 処理を `.finally(refetch)` に統一。SSEポーリング制御は同じ箇所を4回修正した経緯があるため、CLAUDE.md に Implementation Guidelines として教訓を記録。
+- 2026-02-25: Issue #21 対応。`run/route.ts` に認可チェックを追加。expansion 作成者・ルームオーナー以外は 403 を返す。型チェック・テスト全通過を確認。
 - 2026-02-24: PR #20 マージ。シームレスタイル接続（コンポジットキャンバス方式）を実装。Stale session による FK 制約エラー (P2003) を発見、`auth.ts` の DB 存在チェック追加を次タスクとする。
 - 2026-02-23: UI/UX Phase 3 を完了。`tile-cell` にフレーム効果を追加し、拡張セルをパルス演出＋アイコン強化で再設計。`candidate-list` はタブ化（進行中/採用待ち/履歴）とステータスフィルタを実装。
 - 2026-02-23: `lucide-react` / `framer-motion` をインストールし、UI/UX Phase 2 を完了。主要コンポーネントのアイコンを Lucide に置換し、Framer Motion による滑らかなアニメーションを導入。
@@ -91,7 +105,7 @@
 - **基本機能**: ルーム作成、タイルの拡張、採用/却下、ロック機構は実装済み。
 - **初期画像生成**: ルーム作成時にプロンプトを入力し、初期タイル(0,0)をAI生成可能。`Room.initialPrompt` / `initialTileStatus` / `updatedAt` で状態管理。`/api/rooms/[id]/generate-initial` エンドポイントで非同期生成。生成中はスピナー表示、失敗時はリトライボタン表示。初期生成完了まで隣接セルの拡張を抑制。GENERATING 遷移は `updateMany` による条件付き更新で競合防止。5分経過した GENERATING はスタックとみなし FAILED にリセット。ルームページで PENDING を検知し自動トリガー（fire-and-forget 廃止）。プロンプト入力は `sanitizePromptText` で制御文字除去+長さ制限済み。
 - **画像生成**: `DallE2ImageGenProvider` を実装済み（`src/lib/image-gen/dalle2-provider.ts`）。`IMAGE_GEN_PROVIDER=dalle2` + `OPENAI_API_KEY` 設定で本番動作可能。`OPENAI_API_KEY` 未設定時はコンストラクタで早期エラー。マスク方向修正済み（境界辺を保持側に）。`referenceImageUrl` の外部 URL 対応済み（Issue #8 解決）。**画像保存は `StorageProvider` 抽象化済み**（`STORAGE_PROVIDER` 環境変数で切り替え可能、デフォルト `local`）。S3/R2 プロバイダは未実装だがインターフェース準備済み（Issue #4 対応済み）。`generateInitial()` メソッドを追加し、初期タイル生成に対応（参照画像・マスク不要の `images.generate()` API を使用）。
-- **リアルタイム性**: SSE エンドポイント (`/api/rooms/[id]/events`) 実装済み。`setMaxListeners(0)` 設定済み。`controller.close()` try-catch 保護済み。単一プロセス前提だがアーキテクチャ制約と移行パス（Redis Pub/Sub）を文書化済み（Issue #3 対応済み）。
+- **リアルタイム性**: SSE エンドポイント (`/api/rooms/[id]/events`) 実装済み。`setMaxListeners(0)` 設定済み。`controller.close()` try-catch 保護済み。単一プロセス前提だがアーキテクチャ制約と移行パス（Redis Pub/Sub）を文書化済み（Issue #3 対応済み）。クライアント側フォールバックポーリングは `onerror` で開始、`onopen` + `room_update` で停止する設計（CLAUDE.md Implementation Guidelines 参照）。
 - **認証**: `iron-session` による暗号化 Cookie セッション実装済み。`SESSION_SECRET` 検証をモジュールトップレベルで実施。`DELETE /api/session` は bodyless 204 レスポンスに修正済み。
 - **FAILED 時ロック解放**: `run/route.ts` のトランザクション処理済み（実装完了）。
 - **テスト**: `vitest.config.ts` 設定済み。`lock-service.test.ts`（4ケース）・`run/route.test.ts`（3ケース）作成済み。
