@@ -84,6 +84,8 @@ All endpoints validate input with Zod schemas from `src/lib/validation.ts`.
 
 ## Implementation Guidelines
 
+> これらのガイドラインは `.claude/rules/` でルールとしても定義されている。以下は背景と経緯の記録。
+
 ### SSE + Fallback Polling (`useRoom`)
 
 `use-room.ts` のSSE/ポーリング制御は過去4回修正されている。変更時は以下を守ること:
@@ -99,3 +101,23 @@ fire-and-forget的なfetch（`generate-initial`等）では、成功・HTTPエ�
 
 - `res.ok` のみで分岐するとHTTPエラー時に状態更新が漏れる
 - `catch` でフラグをリセットすると `refetch` → 再評価 → 即再fetch のループリスクがある
+
+### 状態遷移の競合防止（`updateMany` + count パターン）
+
+状態に依存する更新（QUEUED→RUNNING 等）では `findUnique → if → update` は TOCTOU 競合を起こす。
+代わりに `updateMany` の WHERE に現在の状態を含め、`count === 0` で競合を検出する:
+
+```typescript
+const updated = await prisma.expansion.updateMany({
+  where: { id, status: "QUEUED" },
+  data: { status: "RUNNING" },
+});
+if (updated.count === 0) {
+  return conflict("Expansion is not in QUEUED status");
+}
+```
+
+適用箇所:
+- `src/app/api/expansions/[id]/run/route.ts` — QUEUED→RUNNING
+- `src/app/api/rooms/[id]/generate-initial/route.ts` — PENDING→GENERATING
+- `src/lib/auto-adopt.ts` — DONE→ADOPTED/REJECTED

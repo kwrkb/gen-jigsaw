@@ -33,7 +33,8 @@ public/generated/*
 .mcp.json
 .idea
 .vscode
-.claude/
+.claude/*
+!.claude/rules/
 
 # Internal .git files (if accidentally copied to root)
 # config
