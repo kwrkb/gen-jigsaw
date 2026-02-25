@@ -35,12 +35,24 @@ export function useRoom(roomId: string) {
     const eventSource = new EventSource(`/api/rooms/${roomId}/events`);
     eventSourceRef.current = eventSource;
 
-    eventSource.addEventListener("room_update", () => {
-      fetchRoom();
-    });
-
     // Fallback polling — only activated when SSE disconnects
     let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    eventSource.onopen = () => {
+      stopPolling();
+    };
+
+    eventSource.addEventListener("room_update", () => {
+      fetchRoom();
+      stopPolling();
+    });
 
     eventSource.onerror = () => {
       if (!pollTimer) {
@@ -48,13 +60,6 @@ export function useRoom(roomId: string) {
         pollTimer = setInterval(fetchRoom, FALLBACK_POLL_INTERVAL);
       }
     };
-
-    eventSource.addEventListener("ready", () => {
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
-    });
 
     return () => {
       eventSource.close();

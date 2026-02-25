@@ -40,14 +40,9 @@ export default function RoomPage({ params }: RoomPageProps) {
       !initialTriggerFired.current
     ) {
       initialTriggerFired.current = true;
-      fetch(`/api/rooms/${roomId}/generate-initial`, { method: "POST" }).catch(
-        () => {
-          // ポーリングで状態確認されるため、ここでのエラーは無視
-          initialTriggerFired.current = false;
-        }
-      );
+      fetch(`/api/rooms/${roomId}/generate-initial`, { method: "POST" }).finally(refetch);
     }
-  }, [isOwner, room?.initialTileStatus, room?.initialPrompt, roomId]);
+  }, [isOwner, room?.initialTileStatus, room?.initialPrompt, roomId, refetch]);
 
   const handleExpand = useCallback((x: number, y: number, fromTile: Tile) => {
     setExpandTarget({ x, y, fromTile });
