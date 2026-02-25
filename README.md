@@ -97,8 +97,7 @@ prisma/schema.prisma      # Database schema (User, Room, Tile, Expansion, Expans
 User clicks "+" → Acquire Lock → Enter Prompt → Create Expansion (QUEUED)
   → Run Image Generation (RUNNING → DONE)
   → Users vote (ADOPT / REJECT)
-  → Owner adopts (→ ADOPTED, creates Tile) or rejects (→ REJECTED)
-  → Or: auto-adopt after timeout (default 60s) based on vote tally
+  → After timeout (default 60s), auto-adopted (→ ADOPTED, creates Tile) or rejected (→ REJECTED) based on vote tally
 ```
 
 Status transitions: `QUEUED → RUNNING → DONE → ADOPTED / REJECTED` (or `FAILED`)
@@ -118,8 +117,8 @@ Status transitions: `QUEUED → RUNNING → DONE → ADOPTED / REJECTED` (or `FA
 | DELETE | `/api/rooms/:id/locks` | Release lock |
 | POST | `/api/rooms/:id/expansions` | Create expansion |
 | POST | `/api/expansions/:id/run` | Execute image generation |
-| POST | `/api/expansions/:id/adopt` | Adopt expansion → create Tile |
-| POST | `/api/expansions/:id/reject` | Reject expansion |
+| POST | `/api/expansions/:id/adopt` | Record ADOPT vote |
+| POST | `/api/expansions/:id/reject` | Record REJECT vote |
 
 ## Development
 
@@ -182,7 +181,7 @@ npm run dev
 2. 「+ 新しいルーム」でルーム作成
 3. ルーム画面で初期タイル (0,0) を確認
 4. 隣接セルの「+」をクリック → プロンプト入力 → 「生成する」
-5. 生成完了後、オーナーが「採用」→ タイルがグリッドに追加される
+5. 生成完了後、ユーザーが投票 → 一定時間後に自動決定 → タイルがグリッドに追加される
 6. 別ブラウザ/シークレットで2人目ユーザーとして参加 → マルチプレイを確認
 
 ### コマンド

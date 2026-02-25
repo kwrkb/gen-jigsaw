@@ -46,8 +46,7 @@ Client (React + hooks) → Next.js API Routes → Prisma → SQLite (`prisma/dev
 2. Enters prompt → creates **Expansion** (status: QUEUED)
 3. Client calls `/api/expansions/[id]/run` → image generation → status: DONE
 4. Users vote on candidates (ExpansionVote: ADOPT / REJECT)
-5. Room owner adopts (creates Tile + releases lock) or rejects (releases lock)
-6. Stale DONE expansions are auto-resolved after timeout (`auto-adopt.ts`, default 60s)
+5. After timeout (default 60s), `auto-adopt.ts` resolves based on vote tally → ADOPTED (creates Tile + releases lock) or REJECTED (releases lock)
 
 Status transitions: `QUEUED → RUNNING → DONE → ADOPTED/REJECTED` (or `FAILED`)
 
@@ -78,7 +77,7 @@ Provider interface pattern. `MockImageGenProvider` copies `public/placeholder.pn
 | POST/DELETE | `/api/rooms/:id/locks` | Acquire / release lock |
 | POST | `/api/rooms/:id/expansions` | Create expansion |
 | POST | `/api/expansions/:id/run` | Execute image generation |
-| POST | `/api/expansions/:id/adopt` | Owner adopts → creates Tile |
-| POST | `/api/expansions/:id/reject` | Owner rejects |
+| POST | `/api/expansions/:id/adopt` | Record ADOPT vote |
+| POST | `/api/expansions/:id/reject` | Record REJECT vote |
 
 All endpoints validate input with Zod schemas from `src/lib/validation.ts`.
