@@ -8,6 +8,9 @@ type PrismaMock = {
     findUnique: FnMock;
     update: FnMock;
   };
+  room: {
+    findUnique: FnMock;
+  };
   tile: {
     findUnique: FnMock;
     findMany: FnMock;
@@ -23,6 +26,9 @@ vi.mock("@/lib/prisma", () => ({
     expansion: {
       findUnique: vi.fn(),
       update: vi.fn(),
+    },
+    room: {
+      findUnique: vi.fn(),
     },
     tile: {
       findUnique: vi.fn(),
@@ -88,6 +94,7 @@ describe("POST /api/expansions/:id/run", () => {
       status: "QUEUED",
       targetX: 1,
       targetY: 0,
+      createdByUserId: "user-1",
     });
     prismaMock.tile.findUnique.mockResolvedValue({
       id: "tile-1",
@@ -135,6 +142,7 @@ describe("POST /api/expansions/:id/run", () => {
       status: "QUEUED",
       targetX: 1,
       targetY: 0,
+      createdByUserId: "user-1",
     });
     prismaMock.tile.findUnique.mockResolvedValue({
       id: "tile-1",
@@ -158,6 +166,87 @@ describe("POST /api/expansions/:id/run", () => {
     expect(res.status).toBe(500);
     expect(json.error).toBe("Image generation failed");
     expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns 403 when user is neither expansion creator nor room owner", async () => {
+    const { prismaMock } = await getMocks();
+
+    prismaMock.expansion.findUnique.mockResolvedValue({
+      id: "exp-1",
+      roomId: "room-1",
+      fromTileId: "tile-1",
+      direction: "E",
+      promptJson: JSON.stringify({ text: "sunset" }),
+      status: "QUEUED",
+      targetX: 1,
+      targetY: 0,
+      createdByUserId: "user-other",
+    });
+    prismaMock.room.findUnique.mockResolvedValue({
+      id: "room-1",
+      ownerUserId: "user-owner",
+    });
+
+    const { POST } = await import("./route");
+    const req = new NextRequest("http://localhost/api/expansions/exp-1/run", {
+      method: "POST",
+      body: "{}",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const res = await POST(req, { params: Promise.resolve({ id: "exp-1" }) });
+    const json = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(json.error).toBe("Not authorized to run this expansion");
+  });
+
+  it("allows room owner to run expansion created by another user", async () => {
+    const { prismaMock, getImageGenProviderMock } = await getMocks();
+
+    const generateMock = vi.fn().mockResolvedValue({ imagePath: "/generated/new.png" });
+    getImageGenProviderMock.mockReturnValue({ generate: generateMock });
+
+    prismaMock.expansion.findUnique.mockResolvedValue({
+      id: "exp-1",
+      roomId: "room-1",
+      fromTileId: "tile-1",
+      direction: "E",
+      promptJson: JSON.stringify({ text: "sunset" }),
+      status: "QUEUED",
+      targetX: 1,
+      targetY: 0,
+      createdByUserId: "user-other",
+    });
+    prismaMock.room.findUnique.mockResolvedValue({
+      id: "room-1",
+      ownerUserId: "user-1",
+    });
+    prismaMock.tile.findUnique.mockResolvedValue({
+      id: "tile-1",
+      imageUrl: "/placeholder.png",
+    });
+    prismaMock.tile.findMany.mockResolvedValue([]);
+    prismaMock.expansion.update
+      .mockResolvedValueOnce({ id: "exp-1", status: "RUNNING" })
+      .mockResolvedValueOnce({
+        id: "exp-1",
+        status: "DONE",
+        resultImageUrl: "/generated/new.png",
+      });
+
+    const { POST } = await import("./route");
+    const req = new NextRequest("http://localhost/api/expansions/exp-1/run", {
+      method: "POST",
+      body: "{}",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const res = await POST(req, { params: Promise.resolve({ id: "exp-1" }) });
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.status).toBe("DONE");
   });
 
   it("returns 401 when no authenticated session exists", async () => {

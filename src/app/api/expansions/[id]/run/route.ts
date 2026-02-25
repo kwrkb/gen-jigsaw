@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   badRequest,
   conflict,
+  forbidden,
   notFound,
   serverError,
   unauthorized,
@@ -27,6 +28,13 @@ export async function POST(
 
   const expansion = await prisma.expansion.findUnique({ where: { id } });
   if (!expansion) return notFound("Expansion not found");
+
+  if (expansion.createdByUserId !== userId) {
+    const room = await prisma.room.findUnique({ where: { id: expansion.roomId } });
+    if (room?.ownerUserId !== userId) {
+      return forbidden("Not authorized to run this expansion");
+    }
+  }
 
   if (expansion.status !== "QUEUED") {
     return conflict(`Expansion is in status ${expansion.status}, expected QUEUED`);
