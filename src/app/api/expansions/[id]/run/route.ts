@@ -39,10 +39,6 @@ export async function POST(
     return forbidden("Not authorized to run this expansion");
   }
 
-  if (expansion.status !== "QUEUED") {
-    return conflict(`Expansion is in status ${expansion.status}, expected QUEUED`);
-  }
-
   // fromTile を取得
   const fromTile = await prisma.tile.findUnique({
     where: { id: expansion.fromTileId },
@@ -77,11 +73,14 @@ export async function POST(
     if (dir) adjacentImages[dir] = tile.imageUrl;
   }
 
-  // RUNNING に変更
-  await prisma.expansion.update({
-    where: { id },
+  // RUNNING にアトミックに変更（TOCTOU防止）
+  const updated = await prisma.expansion.updateMany({
+    where: { id, status: "QUEUED" },
     data: { status: "RUNNING" },
   });
+  if (updated.count === 0) {
+    return conflict("Expansion is not in QUEUED status");
+  }
   emitRoomEvent(expansion.roomId, "room_update");
 
   try {
