@@ -7,6 +7,7 @@ type PrismaMock = {
   expansion: {
     findUnique: FnMock;
     update: FnMock;
+    updateMany: FnMock;
   };
   tile: {
     findUnique: FnMock;
@@ -23,6 +24,7 @@ vi.mock("@/lib/prisma", () => ({
     expansion: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
     tile: {
       findUnique: vi.fn(),
@@ -96,13 +98,12 @@ describe("POST /api/expansions/:id/run", () => {
       imageUrl: "/placeholder.png",
     });
     prismaMock.tile.findMany.mockResolvedValue([]);
-    prismaMock.expansion.update
-      .mockResolvedValueOnce({ id: "exp-1", status: "RUNNING" })
-      .mockResolvedValueOnce({
-        id: "exp-1",
-        status: "DONE",
-        resultImageUrl: "/generated/new.png",
-      });
+    prismaMock.expansion.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.expansion.update.mockResolvedValue({
+      id: "exp-1",
+      status: "DONE",
+      resultImageUrl: "/generated/new.png",
+    });
 
     const { POST } = await import("./route");
     const req = new NextRequest("http://localhost/api/expansions/exp-1/run", {
@@ -116,7 +117,11 @@ describe("POST /api/expansions/:id/run", () => {
 
     expect(res.status).toBe(200);
     expect(json.status).toBe("DONE");
-    expect(prismaMock.expansion.update).toHaveBeenCalledTimes(2);
+    expect(prismaMock.expansion.updateMany).toHaveBeenCalledWith({
+      where: { id: "exp-1", status: "QUEUED" },
+      data: { status: "RUNNING" },
+    });
+    expect(prismaMock.expansion.update).toHaveBeenCalledTimes(1);
     expect(emitRoomEventMock).toHaveBeenCalledWith("room-1", "room_update");
   });
 
@@ -145,7 +150,7 @@ describe("POST /api/expansions/:id/run", () => {
       imageUrl: "/placeholder.png",
     });
     prismaMock.tile.findMany.mockResolvedValue([]);
-    prismaMock.expansion.update.mockResolvedValue({ id: "exp-1", status: "RUNNING" });
+    prismaMock.expansion.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.lock.deleteMany.mockResolvedValue({ count: 1 });
     prismaMock.$transaction.mockResolvedValue([]);
 
@@ -217,13 +222,12 @@ describe("POST /api/expansions/:id/run", () => {
       imageUrl: "/placeholder.png",
     });
     prismaMock.tile.findMany.mockResolvedValue([]);
-    prismaMock.expansion.update
-      .mockResolvedValueOnce({ id: "exp-1", status: "RUNNING" })
-      .mockResolvedValueOnce({
-        id: "exp-1",
-        status: "DONE",
-        resultImageUrl: "/generated/new.png",
-      });
+    prismaMock.expansion.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.expansion.update.mockResolvedValue({
+      id: "exp-1",
+      status: "DONE",
+      resultImageUrl: "/generated/new.png",
+    });
 
     const { POST } = await import("./route");
     const req = new NextRequest("http://localhost/api/expansions/exp-1/run", {
@@ -237,6 +241,46 @@ describe("POST /api/expansions/:id/run", () => {
 
     expect(res.status).toBe(200);
     expect(json.status).toBe("DONE");
+  });
+
+  it("returns 409 when expansion is no longer in QUEUED status (TOCTOU guard)", async () => {
+    const { prismaMock, getImageGenProviderMock } = await getMocks();
+
+    const generateMock = vi.fn();
+    getImageGenProviderMock.mockReturnValue({ generate: generateMock });
+
+    prismaMock.expansion.findUnique.mockResolvedValue({
+      id: "exp-1",
+      roomId: "room-1",
+      fromTileId: "tile-1",
+      direction: "E",
+      promptJson: JSON.stringify({ text: "sunset" }),
+      status: "QUEUED",
+      targetX: 1,
+      targetY: 0,
+      createdByUserId: "user-1",
+      room: { ownerUserId: "user-1" },
+    });
+    prismaMock.tile.findUnique.mockResolvedValue({
+      id: "tile-1",
+      imageUrl: "/placeholder.png",
+    });
+    prismaMock.tile.findMany.mockResolvedValue([]);
+    prismaMock.expansion.updateMany.mockResolvedValue({ count: 0 });
+
+    const { POST } = await import("./route");
+    const req = new NextRequest("http://localhost/api/expansions/exp-1/run", {
+      method: "POST",
+      body: "{}",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const res = await POST(req, { params: Promise.resolve({ id: "exp-1" }) });
+    const json = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(json.error).toBe("Expansion is not in QUEUED status");
+    expect(generateMock).not.toHaveBeenCalled();
   });
 
   it("returns 401 when no authenticated session exists", async () => {
