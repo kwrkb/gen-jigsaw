@@ -40,14 +40,7 @@ export default function RoomPage({ params }: RoomPageProps) {
       !initialTriggerFired.current
     ) {
       initialTriggerFired.current = true;
-      fetch(`/api/rooms/${roomId}/generate-initial`, { method: "POST" })
-        .then((res) => {
-          if (res.ok) refetch();
-        })
-        .catch(() => {
-          initialTriggerFired.current = false;
-          refetch();
-        });
+      fetch(`/api/rooms/${roomId}/generate-initial`, { method: "POST" }).finally(refetch);
     }
   }, [isOwner, room?.initialTileStatus, room?.initialPrompt, roomId, refetch]);
 

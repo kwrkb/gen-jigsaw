@@ -38,13 +38,20 @@ export function useRoom(roomId: string) {
     // Fallback polling — only activated when SSE disconnects
     let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-    eventSource.addEventListener("room_update", () => {
-      fetchRoom();
-      // SSE が実際に機能していることを確認したので polling を停止
+    const stopPolling = () => {
       if (pollTimer) {
         clearInterval(pollTimer);
         pollTimer = null;
       }
+    };
+
+    eventSource.onopen = () => {
+      stopPolling();
+    };
+
+    eventSource.addEventListener("room_update", () => {
+      fetchRoom();
+      stopPolling();
     });
 
     eventSource.onerror = () => {
