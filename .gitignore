@@ -34,11 +34,6 @@ public/generated/*
 .idea
 .vscode
 .claude/
-config
-hooks
-objects
-refs
-HEAD
 tsconfig.tsbuildinfo
 worklog/
 status/
