@@ -34,14 +34,22 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
   let changed = false;
   for (const [, candidates] of byCell) {
     // 投票集計
-    const totalAdopt = candidates.reduce(
-      (sum, e) => sum + e.votes.filter((v) => v.vote === "ADOPT").length,
-      0
-    );
-    const totalReject = candidates.reduce(
-      (sum, e) => sum + e.votes.filter((v) => v.vote === "REJECT").length,
-      0
-    );
+    let totalAdopt = 0;
+    let totalReject = 0;
+    const candidateAdoptCounts = new Map<string, number>();
+
+    for (const e of candidates) {
+      let eAdopt = 0;
+      for (const v of e.votes) {
+        if (v.vote === "ADOPT") {
+          eAdopt++;
+        } else if (v.vote === "REJECT") {
+          totalReject++;
+        }
+      }
+      totalAdopt += eAdopt;
+      candidateAdoptCounts.set(e.id, eAdopt);
+    }
 
     let pick: (typeof stale)[0] | undefined;
 
@@ -57,8 +65,8 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
         } else {
           // 最多 adopt 票の候補を選択
           pick = valid.reduce((best, e) => {
-            const bestVotes = best.votes.filter((v) => v.vote === "ADOPT").length;
-            const eVotes = e.votes.filter((v) => v.vote === "ADOPT").length;
+            const bestVotes = candidateAdoptCounts.get(best.id) ?? 0;
+            const eVotes = candidateAdoptCounts.get(e.id) ?? 0;
             return eVotes > bestVotes ? e : best;
           });
         }
