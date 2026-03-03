@@ -123,7 +123,7 @@ export async function POST(
       }),
     ]);
     emitRoomEvent(expansion.roomId, "room_update");
-    console.error("Image generation failed:", err);
+    console.error("Image generation failed:", err instanceof Error ? err.message : String(err));
     return serverError("Image generation failed");
   }
 }
