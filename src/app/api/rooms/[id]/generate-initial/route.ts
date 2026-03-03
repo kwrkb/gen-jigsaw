@@ -80,7 +80,7 @@ export async function POST(
 
     return NextResponse.json({ status: "DONE", imageUrl: result.imagePath });
   } catch (error) {
-    console.error("Initial tile generation failed:", error);
+    console.error("Initial tile generation failed:", error instanceof Error ? error.message : String(error));
 
     // 失敗: status FAILED
     await prisma.room.update({

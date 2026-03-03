@@ -19,7 +19,7 @@ export function useUser() {
         setUser(null);
       }
     } catch (error) {
-      console.error("Failed to fetch user:", error);
+      console.error("Failed to fetch user:", error instanceof Error ? error.message : String(error));
       setUser(null);
     } finally {
       setLoading(false);

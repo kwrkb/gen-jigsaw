@@ -21,7 +21,7 @@ export function useRoom(roomId: string) {
         setError(errData.message || "Failed to fetch room");
       }
     } catch (err) {
-      console.error("Failed to fetch room:", err);
+      console.error("Failed to fetch room:", err instanceof Error ? err.message : String(err));
       setError("Network error");
     } finally {
       setLoading(false);
