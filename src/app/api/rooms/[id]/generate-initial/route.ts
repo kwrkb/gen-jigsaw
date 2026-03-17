@@ -4,6 +4,7 @@ import { notFound, unauthorized, forbidden, conflict } from "@/lib/errors";
 import { getUserIdFromSession } from "@/lib/auth";
 import { getImageGenProvider } from "@/lib/image-gen";
 import { emitRoomEvent } from "@/lib/sse-emitter";
+import { logger } from "@/lib/logger";
 import type { PromptJson } from "@/types";
 
 /** GENERATING 状態のまま放置を許容する最大時間（5分） */
@@ -80,7 +81,7 @@ export async function POST(
 
     return NextResponse.json({ status: "DONE", imageUrl: result.imagePath });
   } catch (error) {
-    console.error("Initial tile generation failed:", error instanceof Error ? error.message : String(error));
+    logger.error("Initial tile generation failed:", error);
 
     // 失敗: status FAILED
     await prisma.room.update({
