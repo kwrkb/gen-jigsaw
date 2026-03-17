@@ -1,4 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { emitRoomEvent } from "./sse-emitter";
 
@@ -7,6 +8,10 @@ import { emitRoomEvent } from "./sse-emitter";
 const AUTO_ADOPT_AFTER_MS = Number(
   process.env.AUTO_ADOPT_AFTER_MS ?? 60 * 1000
 );
+
+type StaleExpansion = Prisma.ExpansionGetPayload<{
+  include: { votes: true };
+}>;
 
 /**
  * DONE 状態のまま放置された Expansion を自動決定する。
@@ -27,7 +32,7 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
   if (stale.length === 0) return;
 
   // (targetX, targetY) でグルーピング
-  const byCell = new Map<string, typeof stale>();
+  const byCell = new Map<string, StaleExpansion[]>();
   for (const exp of stale) {
     const key = `${exp.targetX},${exp.targetY}`;
     const arr = byCell.get(key) ?? [];
@@ -60,7 +65,7 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
         createdByUserId: pick.createdByUserId,
       });
       adoptExpIds.push(pick.id);
-      rejectExpIds.push(...rejects.map((e: any) => e.id));
+      rejectExpIds.push(...rejects.map((e) => e.id));
       locksToDelete.push({
         roomId: pick.roomId,
         x: pick.targetX,
@@ -112,7 +117,7 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
     // 堅牢性のために従来の逐次処理にフォールバックする
     console.warn(
       `[auto-adopt] Batched transaction failed, falling back to sequential:`,
-      err
+      err instanceof Error ? err.message : String(err)
     );
     await autoAdoptSequentialFallback(byCell, roomId);
   }
@@ -121,9 +126,13 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
 /**
  * 与えられた候補の中から採用するものを決定する（投票集計ロジック）
  */
-function decideExpansion<T extends { id: string; resultImageUrl: string | null; votes: { vote: string }[] }>(
-  candidates: T[]
-) {
+function decideExpansion<
+  T extends {
+    id: string;
+    resultImageUrl: string | null;
+    votes: { vote: string }[];
+  }
+>(candidates: T[]) {
   let totalAdopt = 0;
   let totalReject = 0;
   const candidateAdoptCounts = new Map<string, number>();
@@ -166,7 +175,7 @@ function decideExpansion<T extends { id: string; resultImageUrl: string | null; 
  * バッチ処理失敗時のフォールバック。セルごとにトランザクションを実行する。
  */
 async function autoAdoptSequentialFallback(
-  byCell: Map<string, any[]>,
+  byCell: Map<string, StaleExpansion[]>,
   roomId: string
 ) {
   let changed = false;
@@ -194,7 +203,7 @@ async function autoAdoptSequentialFallback(
           ...(rejects.length > 0
             ? [
                 prisma.expansion.updateMany({
-                  where: { id: { in: rejects.map((e: any) => e.id) } },
+                  where: { id: { in: rejects.map((e) => e.id) }, status: "DONE" },
                   data: { status: "REJECTED" },
                 }),
               ]
@@ -209,15 +218,21 @@ async function autoAdoptSequentialFallback(
         ]);
         changed = true;
       } catch (err) {
-        console.warn(`[auto-adopt] expansion ${pick.id} fallback failed:`, err);
+        console.warn(
+          `[auto-adopt] expansion ${pick.id} fallback failed:`,
+          err instanceof Error ? err.message : String(err)
+        );
         // P2: リトライループ防止 — 失敗した全候補を REJECTED に更新
         await prisma.expansion
           .updateMany({
-            where: { id: { in: candidates.map((e: any) => e.id) }, status: "DONE" },
+            where: { id: { in: candidates.map((e) => e.id) }, status: "DONE" },
             data: { status: "REJECTED" },
           })
           .catch((e2) =>
-            console.warn(`[auto-adopt] fallback reject failed:`, e2)
+            console.warn(
+              `[auto-adopt] fallback reject failed:`,
+              e2 instanceof Error ? e2.message : String(e2)
+            )
           );
       }
     } else {
@@ -225,7 +240,7 @@ async function autoAdoptSequentialFallback(
       try {
         await prisma.$transaction([
           prisma.expansion.updateMany({
-            where: { id: { in: candidates.map((e: any) => e.id) } },
+            where: { id: { in: candidates.map((e) => e.id) }, status: "DONE" },
             data: { status: "REJECTED" },
           }),
           prisma.lock.deleteMany({
@@ -238,7 +253,10 @@ async function autoAdoptSequentialFallback(
         ]);
         changed = true;
       } catch (err) {
-        console.warn(`[auto-adopt] all-reject for cell failed:`, err);
+        console.warn(
+          `[auto-adopt] all-reject for cell failed:`,
+          err instanceof Error ? err.message : String(err)
+        );
       }
     }
   }
