@@ -1,4 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { emitRoomEvent } from "./sse-emitter";
 
@@ -8,6 +9,14 @@ const AUTO_ADOPT_AFTER_MS = Number(
   process.env.AUTO_ADOPT_AFTER_MS ?? 60 * 1000
 );
 
+type StaleExpansion = Prisma.ExpansionGetPayload<{
+  include: { votes: true };
+}>;
+
+/**
+ * DONE 状態のまま放置された Expansion を自動決定する。
+ * パフォーマンス向上のため、可能な限りバッチ処理（createMany/updateMany）を使用する。
+ */
 export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
   const threshold = new Date(Date.now() - AUTO_ADOPT_AFTER_MS);
 
@@ -23,7 +32,7 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
   if (stale.length === 0) return;
 
   // (targetX, targetY) でグルーピング
-  const byCell = new Map<string, typeof stale>();
+  const byCell = new Map<string, StaleExpansion[]>();
   for (const exp of stale) {
     const key = `${exp.targetX},${exp.targetY}`;
     const arr = byCell.get(key) ?? [];
@@ -31,50 +40,147 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
     byCell.set(key, arr);
   }
 
+  const tilesToCreate: {
+    id: string;
+    roomId: string;
+    x: number;
+    y: number;
+    imageUrl: string;
+    createdByUserId: string;
+  }[] = [];
+  const adoptExpIds: string[] = [];
+  const rejectExpIds: string[] = [];
+  const locksToDelete: { roomId: string; x: number; y: number }[] = [];
+
+  for (const [, candidates] of byCell) {
+    const { pick, rejects } = decideExpansion(candidates);
+
+    if (pick) {
+      tilesToCreate.push({
+        id: createId(),
+        roomId: pick.roomId,
+        x: pick.targetX,
+        y: pick.targetY,
+        imageUrl: pick.resultImageUrl!,
+        createdByUserId: pick.createdByUserId,
+      });
+      adoptExpIds.push(pick.id);
+      rejectExpIds.push(...rejects.map((e) => e.id));
+      locksToDelete.push({
+        roomId: pick.roomId,
+        x: pick.targetX,
+        y: pick.targetY,
+      });
+    } else {
+      rejectExpIds.push(...candidates.map((e) => e.id));
+      locksToDelete.push({
+        roomId: candidates[0].roomId,
+        x: candidates[0].targetX,
+        y: candidates[0].targetY,
+      });
+    }
+  }
+
+  try {
+    // パフォーマンス最適化: 全セルを1つのトランザクションでバッチ処理
+    await prisma.$transaction([
+      ...(tilesToCreate.length > 0
+        ? [prisma.tile.createMany({ data: tilesToCreate })]
+        : []),
+      ...(adoptExpIds.length > 0
+        ? [
+            prisma.expansion.updateMany({
+              where: { id: { in: adoptExpIds }, status: "DONE" },
+              data: { status: "ADOPTED" },
+            }),
+          ]
+        : []),
+      ...(rejectExpIds.length > 0
+        ? [
+            prisma.expansion.updateMany({
+              where: { id: { in: rejectExpIds }, status: "DONE" },
+              data: { status: "REJECTED" },
+            }),
+          ]
+        : []),
+      ...(locksToDelete.length > 0
+        ? [
+            prisma.lock.deleteMany({
+              where: { OR: locksToDelete },
+            }),
+          ]
+        : []),
+    ]);
+    emitRoomEvent(roomId, "room_update");
+  } catch (err) {
+    // バッチ処理が失敗した場合（例: ユニーク制約違反）、
+    // 堅牢性のために従来の逐次処理にフォールバックする
+    console.warn(
+      `[auto-adopt] Batched transaction failed, falling back to sequential:`,
+      err instanceof Error ? err.message : String(err)
+    );
+    await autoAdoptSequentialFallback(byCell, roomId);
+  }
+}
+
+/**
+ * 与えられた候補の中から採用するものを決定する（投票集計ロジック）
+ */
+function decideExpansion<
+  T extends {
+    id: string;
+    resultImageUrl: string | null;
+    votes: { vote: string }[];
+  }
+>(candidates: T[]) {
+  let totalAdopt = 0;
+  let totalReject = 0;
+  const candidateAdoptCounts = new Map<string, number>();
+
+  for (const e of candidates) {
+    let eAdopt = 0;
+    for (const v of e.votes) {
+      if (v.vote === "ADOPT") {
+        eAdopt++;
+      } else if (v.vote === "REJECT") {
+        totalReject++;
+      }
+    }
+    totalAdopt += eAdopt;
+    candidateAdoptCounts.set(e.id, eAdopt);
+  }
+
+  let pick: T | undefined;
+
+  if (totalReject <= totalAdopt) {
+    const valid = candidates.filter((e) => e.resultImageUrl);
+    if (valid.length > 0) {
+      if (totalAdopt === 0 && totalReject === 0) {
+        pick = valid[Math.floor(Math.random() * valid.length)];
+      } else {
+        pick = valid.reduce((best, e) => {
+          const bestVotes = candidateAdoptCounts.get(best.id) ?? 0;
+          const eVotes = candidateAdoptCounts.get(e.id) ?? 0;
+          return eVotes > bestVotes ? e : best;
+        });
+      }
+    }
+  }
+
+  const rejects = candidates.filter((e) => e.id !== pick?.id);
+  return { pick, rejects };
+}
+
+/**
+ * バッチ処理失敗時のフォールバック。セルごとにトランザクションを実行する。
+ */
+async function autoAdoptSequentialFallback(
+  byCell: Map<string, StaleExpansion[]>,
+  roomId: string
+) {
   let changed = false;
   for (const [, candidates] of byCell) {
-    // 投票集計
-    let totalAdopt = 0;
-    let totalReject = 0;
-    const candidateAdoptCounts = new Map<string, number>();
-
-    for (const e of candidates) {
-      let eAdopt = 0;
-      for (const v of e.votes) {
-        if (v.vote === "ADOPT") {
-          eAdopt++;
-        } else if (v.vote === "REJECT") {
-          totalReject++;
-        }
-      }
-      totalAdopt += eAdopt;
-      candidateAdoptCounts.set(e.id, eAdopt);
-    }
-
-    let pick: (typeof stale)[0] | undefined;
-
-    if (totalReject > totalAdopt) {
-      // reject票 > adopt票 → 全却下 (pick = undefined)
-    } else {
-      // adopt票 >= reject票（投票ゼロ含む）→ 採用候補を選択
-      const valid = candidates.filter((e) => e.resultImageUrl);
-      if (valid.length > 0) {
-        if (totalAdopt === 0 && totalReject === 0) {
-          // 投票ゼロ → ランダム選択
-          pick = valid[Math.floor(Math.random() * valid.length)];
-        } else {
-          // 最多 adopt 票の候補を選択
-          pick = valid.reduce((best, e) => {
-            const bestVotes = candidateAdoptCounts.get(best.id) ?? 0;
-            const eVotes = candidateAdoptCounts.get(e.id) ?? 0;
-            return eVotes > bestVotes ? e : best;
-          });
-        }
-      }
-      // valid.length === 0 → 採用できる候補がない → pick = undefined → 全却下
-    }
-
-    const rejects = candidates.filter((e) => e.id !== pick?.id);
+    const { pick, rejects } = decideExpansion(candidates);
 
     if (pick) {
       try {
@@ -97,7 +203,7 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
           ...(rejects.length > 0
             ? [
                 prisma.expansion.updateMany({
-                  where: { id: { in: rejects.map((e) => e.id) } },
+                  where: { id: { in: rejects.map((e) => e.id) }, status: "DONE" },
                   data: { status: "REJECTED" },
                 }),
               ]
@@ -112,21 +218,29 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
         ]);
         changed = true;
       } catch (err) {
-        console.warn(`[auto-adopt] expansion ${pick.id} failed:`, err);
+        console.warn(
+          `[auto-adopt] expansion ${pick.id} fallback failed:`,
+          err instanceof Error ? err.message : String(err)
+        );
         // P2: リトライループ防止 — 失敗した全候補を REJECTED に更新
         await prisma.expansion
           .updateMany({
             where: { id: { in: candidates.map((e) => e.id) }, status: "DONE" },
             data: { status: "REJECTED" },
           })
-          .catch((e2) => console.warn(`[auto-adopt] fallback reject failed:`, e2));
+          .catch((e2) =>
+            console.warn(
+              `[auto-adopt] fallback reject failed:`,
+              e2 instanceof Error ? e2.message : String(e2)
+            )
+          );
       }
     } else {
       // 全却下
       try {
         await prisma.$transaction([
           prisma.expansion.updateMany({
-            where: { id: { in: candidates.map((e) => e.id) } },
+            where: { id: { in: candidates.map((e) => e.id) }, status: "DONE" },
             data: { status: "REJECTED" },
           }),
           prisma.lock.deleteMany({
@@ -139,7 +253,10 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
         ]);
         changed = true;
       } catch (err) {
-        console.warn(`[auto-adopt] all-reject for cell failed:`, err);
+        console.warn(
+          `[auto-adopt] all-reject for cell failed:`,
+          err instanceof Error ? err.message : String(err)
+        );
       }
     }
   }
