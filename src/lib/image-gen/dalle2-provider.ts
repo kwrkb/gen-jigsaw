@@ -241,8 +241,7 @@ async function composeReferenceCanvas(
 
 /** ユーザー入力のサニタイズ: 制御文字除去 + 長さ制限 */
 function sanitizePromptText(text: string, maxLen = 400): string {
-  // eslint-disable-next-line no-control-regex
-  return text.replace(/[\x00-\x1f\x7f]/g, " ").trim().slice(0, maxLen);
+  return text.replace(/[\p{Cc}]/gu, " ").trim().slice(0, maxLen);
 }
 
 function buildPrompt(input: { prompt: { text: string; style?: string } }): string {
