@@ -2,6 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { emitRoomEvent } from "./sse-emitter";
+import { logger } from "./logger";
 
 // DONE 状態のまま放置された Expansion を自動決定するまでの時間 (ms)
 // デフォルト 1 分。AUTO_ADOPT_AFTER_MS 環境変数で変更可能。
@@ -115,9 +116,9 @@ export async function autoAdoptStaleExpansions(roomId: string): Promise<void> {
   } catch (err) {
     // バッチ処理が失敗した場合（例: ユニーク制約違反）、
     // 堅牢性のために従来の逐次処理にフォールバックする
-    console.warn(
+    logger.warn(
       `[auto-adopt] Batched transaction failed, falling back to sequential:`,
-      err instanceof Error ? err.message : String(err)
+      err
     );
     await autoAdoptSequentialFallback(byCell, roomId);
   }
@@ -218,22 +219,14 @@ async function autoAdoptSequentialFallback(
         ]);
         changed = true;
       } catch (err) {
-        console.warn(
-          `[auto-adopt] expansion ${pick.id} fallback failed:`,
-          err instanceof Error ? err.message : String(err)
-        );
+        logger.warn(`[auto-adopt] expansion ${pick.id} fallback failed:`, err);
         // P2: リトライループ防止 — 失敗した全候補を REJECTED に更新
         await prisma.expansion
           .updateMany({
             where: { id: { in: candidates.map((e) => e.id) }, status: "DONE" },
             data: { status: "REJECTED" },
           })
-          .catch((e2) =>
-            console.warn(
-              `[auto-adopt] fallback reject failed:`,
-              e2 instanceof Error ? e2.message : String(e2)
-            )
-          );
+          .catch((e2) => logger.warn(`[auto-adopt] fallback reject failed:`, e2));
       }
     } else {
       // 全却下
@@ -253,10 +246,7 @@ async function autoAdoptSequentialFallback(
         ]);
         changed = true;
       } catch (err) {
-        console.warn(
-          `[auto-adopt] all-reject for cell failed:`,
-          err instanceof Error ? err.message : String(err)
-        );
+        logger.warn(`[auto-adopt] all-reject for cell failed:`, err);
       }
     }
   }

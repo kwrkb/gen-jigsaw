@@ -12,6 +12,7 @@ import { RunExpansionSchema, DirectionSchema } from "@/lib/validation";
 import { getImageGenProvider } from "@/lib/image-gen";
 import { getUserIdFromSession } from "@/lib/auth";
 import { emitRoomEvent } from "@/lib/sse-emitter";
+import { logger } from "@/lib/logger";
 import type { Direction } from "@/types";
 
 export async function POST(
@@ -123,7 +124,7 @@ export async function POST(
       }),
     ]);
     emitRoomEvent(expansion.roomId, "room_update");
-    console.error("Image generation failed:", err instanceof Error ? err.message : String(err));
+    logger.error("Image generation failed:", err);
     return serverError("Image generation failed");
   }
 }
