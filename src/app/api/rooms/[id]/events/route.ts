@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 import { onRoomEvent } from "@/lib/sse-emitter";
+import { getUserIdFromSession } from "@/lib/auth";
+import { unauthorized } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +13,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const userId = await getUserIdFromSession(req);
+  if (!userId) return unauthorized("Login required");
+
   const { id: roomId } = await params;
   const encoder = new TextEncoder();
 

@@ -1,13 +1,17 @@
 import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "@/lib/errors";
+import { notFound, unauthorized } from "@/lib/errors";
 import { autoAdoptStaleExpansions } from "@/lib/auto-adopt";
+import { getUserIdFromSession } from "@/lib/auth";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const userId = await getUserIdFromSession(req);
+  if (!userId) return unauthorized("Login required");
+
   const { id } = await params;
 
   const now = new Date();
