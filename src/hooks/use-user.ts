@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { logger } from "@/lib/logger";
 
 export interface User {
   id: string;
@@ -19,7 +20,7 @@ export function useUser() {
         setUser(null);
       }
     } catch (error) {
-      console.error("Failed to fetch user:", error instanceof Error ? error.message : String(error));
+      logger.error("Failed to fetch user:", error);
       setUser(null);
     } finally {
       setLoading(false);

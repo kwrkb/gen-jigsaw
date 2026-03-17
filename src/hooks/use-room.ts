@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { logger } from "@/lib/logger";
 import type { RoomDetail } from "@/types";
 
 const FALLBACK_POLL_INTERVAL = 3_000;
@@ -21,7 +22,7 @@ export function useRoom(roomId: string) {
         setError(errData.message || "Failed to fetch room");
       }
     } catch (err) {
-      console.error("Failed to fetch room:", err instanceof Error ? err.message : String(err));
+      logger.error("Failed to fetch room:", err);
       setError("Network error");
     } finally {
       setLoading(false);
@@ -56,7 +57,7 @@ export function useRoom(roomId: string) {
 
     eventSource.onerror = () => {
       if (!pollTimer) {
-        console.warn("SSE connection lost, falling back to polling");
+        logger.warn("SSE connection lost, falling back to polling");
         pollTimer = setInterval(fetchRoom, FALLBACK_POLL_INTERVAL);
       }
     };
