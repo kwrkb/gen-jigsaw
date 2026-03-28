@@ -13,7 +13,11 @@ import { getImageGenProvider } from "@/lib/image-gen";
 import { getUserIdFromSession } from "@/lib/auth";
 import { emitRoomEvent } from "@/lib/sse-emitter";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { Direction } from "@/types";
+
+const IMAGE_GEN_RATE_LIMIT_MAX = 5;
+const IMAGE_GEN_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10分
 
 export async function POST(
   req: NextRequest,
@@ -32,6 +36,21 @@ export async function POST(
     include: { room: { select: { ownerUserId: true } } },
   });
   if (!expansion) return notFound("Expansion not found");
+
+  if (!checkRateLimit("image-gen", userId, IMAGE_GEN_RATE_LIMIT_MAX, IMAGE_GEN_RATE_LIMIT_WINDOW_MS)) {
+    // QUEUED のまま残すと UI でセルが永久にブロックされるため FAILED に変更してロックを解放する
+    await prisma.$transaction([
+      prisma.expansion.updateMany({
+        where: { id, status: "QUEUED" },
+        data: { status: "FAILED" },
+      }),
+      prisma.lock.deleteMany({
+        where: { roomId: expansion.roomId, x: expansion.targetX, y: expansion.targetY },
+      }),
+    ]);
+    emitRoomEvent(expansion.roomId, "room_update");
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  }
 
   if (
     expansion.createdByUserId !== userId &&

@@ -79,6 +79,12 @@
 - [x] Issue #21: `run/route.ts` の認可チェック不足を修正
   > expansion 作成者でもルームオーナーでもないユーザーは 403 を返すよう修正。`forbidden` を import 追加。`route.test.ts` の prisma モックに `room.findUnique` を追加し、既存テストの expansion モックに `createdByUserId` を設定。
 
+### Steps（セキュリティ修正 — 2026-03-29）
+- [x] `GET /api/rooms`: 認証チェックなしで全ルーム一覧が取得可能だった問題を修正（`getUserIdFromSession` 追加）
+- [x] SSRF防止: `loadReferenceImage()` の HTTP/HTTPS フェッチを削除（tile.imageUrl は常にローカルパスのみ）
+- [x] レートリミッター新設: `src/lib/rate-limit.ts`（インメモリ Map ベース）
+  > `/api/expansions/[id]/run`: 5回/10分/ユーザー、`/api/users`: 20回/時間/IP
+
 ### Steps（初期タイル拡張セル表示不具合修正 — PR #31）
 - [x] `page.tsx`: generate-initial 完了後に `refetch()` を呼び、リロードなしで拡張セルを表示
 - [x] `use-room.ts`: SSE ポーリング制御の修正（`ready` イベント依存 → `room_update` + `onopen` で停止）
@@ -140,7 +146,7 @@
 - [x] `openai` npm パッケージの追加
 - [x] `sharp` npm パッケージの追加（マスク画像生成・RGBA変換に必須）
 - [x] `DallE2ImageGenProvider` の実装 (`src/lib/image-gen/dalle2-provider.ts`)
-  - `referenceImageUrl` の外部 URL（http/https）対応済み。`loadReferenceImage()` で fetch/readFileSync を分岐（Issue #8 解決）
+  - ~~`referenceImageUrl` の外部 URL（http/https）対応済み。`loadReferenceImage()` で fetch/readFileSync を分岐（Issue #8 解決）~~ → SSRF防止のため HTTP/HTTPS フェッチを削除済み（2026-03-29）。tile.imageUrl は常にローカルパスのみ
   - 参照画像を PNG (RGBA) へ変換（`sharp` を使用）
   - `direction`（`N`/`E`/`S`/`W`）に応じてアルファチャンネル付きマスク画像を生成（境界辺を保持側に修正済み）
   - OpenAI `images.edit()` へ参照画像・マスク・プロンプトを渡す

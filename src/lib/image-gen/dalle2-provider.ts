@@ -32,9 +32,7 @@ async function sleep(ms: number) {
 
 export async function loadReferenceImage(imageUrl: string): Promise<Buffer> {
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
-    const res = await fetch(imageUrl);
-    if (!res.ok) throw new Error(`Failed to fetch reference image: ${res.status}`);
-    return Buffer.from(await res.arrayBuffer());
+    throw new Error("External image URLs are not supported");
   }
   const trimmed = imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl;
   const publicDir = join(process.cwd(), "public");
