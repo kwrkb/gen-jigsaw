@@ -24,10 +24,6 @@ export async function POST(
   const userId = await getUserIdFromSession(req);
   if (!userId) return unauthorized("Login required");
 
-  if (!checkRateLimit("image-gen", userId, 5, 10 * 60 * 1000)) {
-    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
-  }
-
   const body = await req.json().catch(() => null);
   const parsed = RunExpansionSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.message);
@@ -37,6 +33,21 @@ export async function POST(
     include: { room: { select: { ownerUserId: true } } },
   });
   if (!expansion) return notFound("Expansion not found");
+
+  if (!checkRateLimit("image-gen", userId, 5, 10 * 60 * 1000)) {
+    // QUEUED のまま残すと UI でセルが永久にブロックされるため FAILED に変更してロックを解放する
+    await prisma.$transaction([
+      prisma.expansion.updateMany({
+        where: { id, status: "QUEUED" },
+        data: { status: "FAILED" },
+      }),
+      prisma.lock.deleteMany({
+        where: { roomId: expansion.roomId, x: expansion.targetX, y: expansion.targetY },
+      }),
+    ]);
+    emitRoomEvent(expansion.roomId, "room_update");
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  }
 
   if (
     expansion.createdByUserId !== userId &&
