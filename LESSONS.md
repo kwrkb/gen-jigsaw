@@ -33,3 +33,11 @@
 ### tile.imageUrl は常にローカルパス。HTTP URL を loadReferenceImage に渡さない
 - SSRF防止のため `loadReferenceImage()` は HTTP/HTTPS URL を意図的に拒否する。DALL-E URLのダウンロードは `downloadAndUpload()` が直接行う
 - **ルール**: `tile.imageUrl` に外部URLを格納しない。`/placeholder.png` または `/generated/{cuid}.png` のみ。HTTP対応をこの関数に追加しないこと
+
+### 推移的依存の脆弱性は npm overrides で修正し、メジャーアップを避ける
+- Prisma 6.x が `effect@3.18.4`（GHSA-38f7-945m-qr2g）に依存。修正版は Prisma 7.x のみだが、メジャーアップには破壊的変更リスクがある
+- **ルール**: 推移的依存の脆弱性は `package.json` の `"overrides"` フィールドで脆弱パッケージを強制アップデートする。メジャーバージョンアップは最後の手段とし、まず `overrides` を試す
+
+### npm audit fix --dry-run で変更内容を事前確認する
+- `npm audit fix` を直接実行すると何が変わるか不明なまま lock ファイルが書き換わる
+- **ルール**: `npm audit fix --dry-run` で変更予定パッケージを確認してから本実行する。`--force` が必要な場合は特に慎重に確認する
