@@ -16,6 +16,9 @@ import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/rate-limit";
 import type { Direction } from "@/types";
 
+const IMAGE_GEN_RATE_LIMIT_MAX = 5;
+const IMAGE_GEN_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10分
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -34,7 +37,7 @@ export async function POST(
   });
   if (!expansion) return notFound("Expansion not found");
 
-  if (!checkRateLimit("image-gen", userId, 5, 10 * 60 * 1000)) {
+  if (!checkRateLimit("image-gen", userId, IMAGE_GEN_RATE_LIMIT_MAX, IMAGE_GEN_RATE_LIMIT_WINDOW_MS)) {
     // QUEUED のまま残すと UI でセルが永久にブロックされるため FAILED に変更してロックを解放する
     await prisma.$transaction([
       prisma.expansion.updateMany({

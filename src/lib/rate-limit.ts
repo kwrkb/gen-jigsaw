@@ -5,6 +5,18 @@ interface RateLimitEntry {
 
 const stores = new Map<string, Map<string, RateLimitEntry>>();
 
+// 期限切れエントリを5分ごとに削除してメモリリークを防ぐ
+setInterval(() => {
+  const now = Date.now();
+  for (const store of stores.values()) {
+    for (const [key, entry] of store.entries()) {
+      if (now > entry.resetAt) {
+        store.delete(key);
+      }
+    }
+  }
+}, 5 * 60 * 1000);
+
 /**
  * シンプルなインメモリレートリミッター。
  * @param limiterId  リミッターの識別子（例: "image-gen"）
