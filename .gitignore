@@ -46,3 +46,5 @@ public/generated/*
 tsconfig.tsbuildinfo
 worklog/
 status/
+.playwright-mcp/
+.playwright-cli/
