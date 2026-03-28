@@ -77,13 +77,13 @@
 
 ### Steps（認可チェック修正）
 - [x] Issue #21: `run/route.ts` の認可チェック不足を修正
+  > expansion 作成者でもルームオーナーでもないユーザーは 403 を返すよう修正。`forbidden` を import 追加。`route.test.ts` の prisma モックに `room.findUnique` を追加し、既存テストの expansion モックに `createdByUserId` を設定。
 
 ### Steps（セキュリティ修正 — 2026-03-29）
 - [x] `GET /api/rooms`: 認証チェックなしで全ルーム一覧が取得可能だった問題を修正（`getUserIdFromSession` 追加）
 - [x] SSRF防止: `loadReferenceImage()` の HTTP/HTTPS フェッチを削除（tile.imageUrl は常にローカルパスのみ）
 - [x] レートリミッター新設: `src/lib/rate-limit.ts`（インメモリ Map ベース）
   > `/api/expansions/[id]/run`: 5回/10分/ユーザー、`/api/users`: 20回/時間/IP
-  > expansion 作成者でもルームオーナーでもないユーザーは 403 を返すよう修正。`forbidden` を import 追加。`route.test.ts` の prisma モックに `room.findUnique` を追加し、既存テストの expansion モックに `createdByUserId` を設定。
 
 ### Steps（初期タイル拡張セル表示不具合修正 — PR #31）
 - [x] `page.tsx`: generate-initial 完了後に `refetch()` を呼び、リロードなしで拡張セルを表示
