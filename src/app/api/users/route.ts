@@ -4,8 +4,14 @@ import { badRequest } from "@/lib/errors";
 import { CreateUserSchema } from "@/lib/validation";
 import { createId } from "@paralleldrive/cuid2";
 import { setSession } from "@/lib/session";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+  if (!checkRateLimit("user-create", ip, 20, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = CreateUserSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.message);

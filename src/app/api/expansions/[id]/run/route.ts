@@ -13,6 +13,7 @@ import { getImageGenProvider } from "@/lib/image-gen";
 import { getUserIdFromSession } from "@/lib/auth";
 import { emitRoomEvent } from "@/lib/sse-emitter";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { Direction } from "@/types";
 
 export async function POST(
@@ -22,6 +23,10 @@ export async function POST(
   const { id } = await params;
   const userId = await getUserIdFromSession(req);
   if (!userId) return unauthorized("Login required");
+
+  if (!checkRateLimit("image-gen", userId, 5, 10 * 60 * 1000)) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = RunExpansionSchema.safeParse(body);

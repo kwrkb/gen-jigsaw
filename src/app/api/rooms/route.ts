@@ -5,7 +5,10 @@ import { CreateRoomSchema } from "@/lib/validation";
 import { createId } from "@paralleldrive/cuid2";
 import { getUserIdFromSession } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const userId = await getUserIdFromSession(req);
+  if (!userId) return unauthorized("Login required");
+
   const rooms = await prisma.room.findMany({
     orderBy: { createdAt: "desc" },
     include: { owner: { select: { displayName: true } } },
