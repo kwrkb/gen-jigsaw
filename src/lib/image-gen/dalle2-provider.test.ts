@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { loadReferenceImage } from "./dalle2-provider";
-import { readFileSync } from "fs";
+import { readFile } from "fs/promises";
 import { join } from "path";
 
-vi.mock("fs");
+vi.mock("fs/promises");
 
 // Mock global fetch
 global.fetch = vi.fn();
@@ -30,28 +30,28 @@ describe("loadReferenceImage", () => {
 
   it("should allow valid paths within the public directory", async () => {
     const validUrl = "generated/test.png";
-    vi.mocked(readFileSync).mockReturnValue(Buffer.from("fake image data"));
+    vi.mocked(readFile).mockResolvedValue(Buffer.from("fake image data"));
 
     await loadReferenceImage(validUrl);
 
-    expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining(join("public", "generated", "test.png")));
+    expect(readFile).toHaveBeenCalledWith(expect.stringContaining(join("public", "generated", "test.png")));
   });
 
   it("should handle leading slashes correctly and safely", async () => {
     const validUrl = "/generated/test.png";
-    vi.mocked(readFileSync).mockReturnValue(Buffer.from("fake image data"));
+    vi.mocked(readFile).mockResolvedValue(Buffer.from("fake image data"));
 
     await loadReferenceImage(validUrl);
 
-    expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining(join("public", "generated", "test.png")));
+    expect(readFile).toHaveBeenCalledWith(expect.stringContaining(join("public", "generated", "test.png")));
   });
 
   it("should handle absolute-looking paths by keeping them within public", async () => {
     const url = "/etc/passwd"; // becomes etc/passwd relative to public
-    vi.mocked(readFileSync).mockReturnValue(Buffer.from("fake image data"));
+    vi.mocked(readFile).mockResolvedValue(Buffer.from("fake image data"));
 
     await loadReferenceImage(url);
 
-    expect(readFileSync).toHaveBeenCalledWith(expect.stringContaining(join("public", "etc", "passwd")));
+    expect(readFile).toHaveBeenCalledWith(expect.stringContaining(join("public", "etc", "passwd")));
   });
 });

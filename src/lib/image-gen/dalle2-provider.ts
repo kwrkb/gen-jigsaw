@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFile } from "fs/promises";
 import { join, resolve, relative, isAbsolute } from "path";
 import { createId } from "@paralleldrive/cuid2";
 import { getStorageProvider } from "@/lib/storage";
@@ -43,7 +43,7 @@ export async function loadReferenceImage(imageUrl: string): Promise<Buffer> {
     throw new Error("Invalid reference image URL");
   }
 
-  return readFileSync(targetPath);
+  return readFile(targetPath);
 }
 
 function createMaskBuffer(size: number, direction: Direction): Buffer {
