@@ -72,6 +72,15 @@
   - [x] `dalle2-provider.ts`: 512x512 コンポジットキャンバス + エッジストリップ + クロップ
   - [x] `route.test.ts`: `tile.findMany` モック追加 + adjacentImages マッピング簡素化
 
+### Steps（依存パッケージの現代化 — 2026-06-09）
+- [x] ブランチ: `chore/dependency-modernization`
+- [x] next 15 → 16（async request API 対応済みのため codemod 不要。tsc/build/test 全通過）
+- [x] zod 3 → 4（使用 API はすべて互換。破壊的 API 不使用）
+- [x] lucide-react 0 → 1（CheckCircle2/Wand2 等 -2 サフィックス名は 1.x で維持）
+- [x] @paralleldrive/cuid2 2 → 3（createId() のみ使用、API 変更なし）
+- [x] npm update — range 内最新化（react/openai/sharp/framer-motion/devDeps 等）
+- [ ] **Prisma 7 は別スコープで対応**（ESM-only 化・prisma.config.ts 必須・driver adapter 必須という連鎖的構成変更を伴うため。`overrides.@prisma/config.effect` も Prisma 6 と結びついており温存）
+
 ### Steps（Stale Session 修正）
 - [ ] `auth.ts`: `getUserIdFromSession` に DB 存在チェック追加（FK 制約エラー P2003 修正）
 
@@ -94,6 +103,7 @@
 - [x] `CLAUDE.md` に Implementation Guidelines 追加（SSEポーリング制御・fetchハンドリングの過去の繰り返し修正を教訓として記録）
 
 ### Notes
+- 2026-06-09: 依存パッケージ現代化。next 16 / zod 4 / lucide-react 1 / cuid2 3 へ major bump 完了。Prisma 7 は ESM-only 化等の連鎖的構成変更を伴うため独立スコープとして見送り（`overrides.@prisma/config.effect` 温存）。tsc/build/test 全通過。
 - 2026-02-25: PR #31 レビューコメント対応。`use-room.ts` に `onopen` ハンドラ追加、`page.tsx` の fetch 処理を `.finally(refetch)` に統一。SSEポーリング制御は同じ箇所を4回修正した経緯があるため、CLAUDE.md に Implementation Guidelines として教訓を記録。
 - 2026-02-25: Issue #21 対応。`run/route.ts` に認可チェックを追加。expansion 作成者・ルームオーナー以外は 403 を返す。型チェック・テスト全通過を確認。
 - 2026-02-24: PR #20 マージ。シームレスタイル接続（コンポジットキャンバス方式）を実装。Stale session による FK 制約エラー (P2003) を発見、`auth.ts` の DB 存在チェック追加を次タスクとする。

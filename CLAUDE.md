@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Gen-Jigsaw is a collaborative AI-powered outpainting puzzle app. Users expand a world grid by generating new tiles in adjacent cells. The room owner reviews and adopts/rejects generated tiles.
 
-**Stack:** Next.js 15 (App Router) / React 19 / TypeScript / Prisma / SQLite / TailwindCSS v4 / Zod
+**Stack:** Next.js 16 (App Router) / React 19 / TypeScript / Prisma 6 / SQLite / TailwindCSS v4 / Zod 4
 
 ## Commands
 
@@ -19,7 +19,7 @@ npm run db:studio    # Open Prisma Studio GUI
 npx tsc --noEmit     # Type check
 ```
 
-Node.js 24 is managed via mise (`mise.toml`).
+Node.js 24 (node v24+).
 
 ## Architecture
 

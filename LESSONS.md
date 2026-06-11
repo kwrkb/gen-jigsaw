@@ -41,3 +41,15 @@
 ### npm audit fix --dry-run で変更内容を事前確認する
 - `npm audit fix` を直接実行すると何が変わるか不明なまま lock ファイルが書き換わる
 - **ルール**: `npm audit fix --dry-run` で変更予定パッケージを確認してから本実行する。`--force` が必要な場合は特に慎重に確認する
+
+## 依存パッケージ更新 (2026-06-09)
+
+### Prisma major は ESM 化を伴うため独立スコープとして切り出す
+- Prisma 7 は ESM-only（`type: module` 化）・`prisma.config.ts` 必須・generator 名変更・SQLite で driver adapter 必須という連鎖的構成変更を伴う。「画像生成を別スコープに切り出した」のと同じ判断基準で独立スコープとする
+- load-bearing な `overrides.@prisma/config.effect`（セキュリティ修正由来）は Prisma 6 と結びついており、6.x に留まることで温存できる
+- **ルール**: Prisma major 更新は単独 PR・専用ブランチで実施する。他の依存更新と同一 PR に含めない
+
+### 低リスク major はインクリメンタルに bump→tsc→build→test→commit で進める
+- next/zod/lucide-react/cuid2 の major を個別コミットで進め、各ステップで `tsc --noEmit` → `npm run build` → `npm run test` を実行
+- `tsc --noEmit` が最速のフィードバック。型エラーとして破壊が即検出できる major（上記4件）は低リスク判定できる
+- **補足**（#37 との整合）: overrides で推移的脆弱性を凌ぐ場合はそれが優先。overrides で解決できない場合や、型エラーで安全に検出できる場合は major 更新も積極的に検討する

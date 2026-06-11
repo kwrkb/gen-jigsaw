@@ -54,13 +54,13 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 | Technology | Version | Role |
 |------------|---------|------|
-| [Next.js](https://nextjs.org/) | 15 | App Router, API Routes |
+| [Next.js](https://nextjs.org/) | 16 | App Router, API Routes |
 | [React](https://react.dev/) | 19 | UI |
 | [TypeScript](https://www.typescriptlang.org/) | 5 | Type safety |
 | [TailwindCSS](https://tailwindcss.com/) | v4 | Styling |
 | [Prisma](https://www.prisma.io/) | 6 | ORM |
 | SQLite | — | Database (local) |
-| [Zod](https://zod.dev/) | 3 | Validation |
+| [Zod](https://zod.dev/) | 4 | Validation |
 | [Vitest](https://vitest.dev/) | 3 | Testing |
 | [Framer Motion](https://www.framer.com/motion/) | 12 | Animations |
 | [Lucide React](https://lucide.dev/) | — | Icons |
