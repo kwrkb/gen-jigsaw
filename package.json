@@ -34,7 +34,9 @@
   "overrides": {
     "@prisma/config": {
       "effect": "^3.20.0"
-    }
+    },
+    "postcss": "^8.5.10",
+    "esbuild": "^0.28.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
