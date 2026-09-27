@@ -119,5 +119,5 @@ if (updated.count === 0) {
 
 適用箇所:
 - `src/app/api/expansions/[id]/run/route.ts` — QUEUED→RUNNING
-- `src/app/api/rooms/[id]/generate-initial/route.ts` — PENDING→GENERATING
+- `src/app/api/rooms/[id]/generate-initial/route.ts` — PENDING/FAILED→GENERATING
 - `src/lib/auto-adopt.ts` — DONE→ADOPTED/REJECTED
