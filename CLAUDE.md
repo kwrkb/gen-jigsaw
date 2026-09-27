@@ -88,7 +88,7 @@ All endpoints validate input with Zod schemas from `src/lib/validation.ts`.
 
 ### SSE + Fallback Polling (`useRoom`)
 
-`use-room.ts` のSSE/ポーリング制御は過去4回修正されている。変更時は以下を守ること:
+`use-room.ts` のSSE/ポーリング制御は壊れやすい。変更時は以下を守ること:
 
 - **`onopen`**: SSE接続（再接続含む）確立時に発火。ここでフォールバックポーリングを停止する
 - **`onerror`**: 切断時に発火。ここでフォールバックポーリングを開始する
